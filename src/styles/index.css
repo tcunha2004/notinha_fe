@@ -1,0 +1,223 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Drop Tailwind's default palette: every color must come from a token below. */
+  --color-*: initial;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto,
+    sans-serif;
+  --font-rounded: ui-rounded, 'SF Pro Rounded', -apple-system, sans-serif;
+
+  /* Colors */
+  --color-brand-green: #1faf5a;
+  --color-brand-green-dark: #0e8a43;
+  --color-brand-mint: #e6f7ee;
+  --color-brand-gradient-from: #33c76b;
+  --color-brand-gradient-to: #0a8045;
+  --color-accent-blue: #007aff;
+  --color-accent-orange: #ff9500;
+  --color-accent-orange-soft: #fff3e0;
+  --color-accent-red: #ff3b30;
+  --color-label-primary: #000000;
+  --color-label-secondary: rgba(60, 60, 67, 0.6);
+  --color-label-tertiary: rgba(60, 60, 67, 0.3);
+  --color-label-on-accent: #ffffff;
+  --color-on-accent-fill: rgba(255, 255, 255, 0.2);
+  --color-bg-grouped: #f2f2f7;
+  --color-bg-card: #ffffff;
+  --color-fill-tertiary: rgba(118, 118, 128, 0.12);
+  --color-fill-secondary: rgba(120, 120, 128, 0.16);
+  --color-separator: rgba(60, 60, 67, 0.18);
+  --color-glass-light: rgba(255, 255, 255, 0.72);
+  --color-glass-border: rgba(255, 255, 255, 0.9);
+  --color-glass-dark: rgba(58, 58, 60, 0.55);
+  --color-glass-dark-border: rgba(255, 255, 255, 0.2);
+  --color-scrim: rgba(0, 0, 0, 0.32);
+  --color-camera-bg: #0b0b0c;
+  --color-camera-glow: #2a2622;
+  --color-paper: #faf7f1;
+  --color-paper-ink: #1c1c1e;
+  --color-paper-line: #cbc6bc;
+
+  /* Type scale: size / line-height / letter-spacing / weight */
+  --text-large-title: 34px;
+  --text-large-title--line-height: 41px;
+  --text-large-title--letter-spacing: 0.4px;
+  --text-large-title--font-weight: 700;
+  --text-title-1: 28px;
+  --text-title-1--line-height: 34px;
+  --text-title-1--letter-spacing: 0.38px;
+  --text-title-1--font-weight: 700;
+  --text-title-2: 22px;
+  --text-title-2--line-height: 28px;
+  --text-title-2--letter-spacing: -0.26px;
+  --text-title-2--font-weight: 700;
+  --text-title-3: 20px;
+  --text-title-3--line-height: 25px;
+  --text-title-3--letter-spacing: -0.45px;
+  --text-title-3--font-weight: 600;
+  --text-headline: 17px;
+  --text-headline--line-height: 22px;
+  --text-headline--letter-spacing: -0.43px;
+  --text-headline--font-weight: 600;
+  --text-body: 17px;
+  --text-body--line-height: 22px;
+  --text-body--letter-spacing: -0.43px;
+  --text-callout: 16px;
+  --text-callout--line-height: 21px;
+  --text-callout--letter-spacing: -0.31px;
+  --text-subheadline: 15px;
+  --text-subheadline--line-height: 20px;
+  --text-subheadline--letter-spacing: -0.23px;
+  --text-footnote: 13px;
+  --text-footnote--line-height: 18px;
+  --text-footnote--letter-spacing: -0.08px;
+  --text-caption-1: 12px;
+  --text-caption-1--line-height: 16px;
+  --text-caption-2: 11px;
+  --text-caption-2--line-height: 13px;
+  --text-caption-2--letter-spacing: 0.06px;
+  --text-caption-2--font-weight: 600;
+  --text-amount-large: 40px;
+  --text-amount-large--line-height: 48px;
+  --text-amount-large--letter-spacing: -0.5px;
+  --text-amount-large--font-weight: 700;
+  /* Mock receipt (camera / processing illustrations) */
+  --text-receipt-lg: 11px;
+  --text-receipt-lg--line-height: 14px;
+  --text-receipt: 9.5px;
+  --text-receipt--line-height: 13px;
+  --text-receipt-sm: 6.5px;
+  --text-receipt-sm--line-height: 10px;
+
+  /* Radii */
+  --radius-card: 22px;
+  --radius-field: 18px;
+  --radius-sheet: 40px;
+
+  /* Shadows */
+  --shadow-glass: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-brand: 0 12px 28px rgba(14, 138, 67, 0.28);
+  --shadow-paper: 0 18px 40px rgba(0, 0, 0, 0.35);
+  --shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+
+  /* Motion */
+  --animate-push: push-in 300ms ease-out;
+  --animate-sheet-up: sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-dialog-in: dialog-in 220ms ease-out;
+  --animate-fade-in: fade-in 220ms ease-out;
+  --animate-scan: scan 2s ease-in-out infinite;
+
+  @keyframes push-in {
+    from {
+      transform: translateX(32px);
+      opacity: 0;
+    }
+  }
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      transform: scale(0.96);
+      opacity: 0;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes scan {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(70%);
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--color-bg-grouped);
+    color: var(--color-label-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent-blue);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Liquid Glass: floating controls */
+@utility glass {
+  background-color: var(--color-glass-light);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 0 0 1px var(--color-glass-border),
+    var(--shadow-glass);
+}
+
+@utility glass-dark {
+  background-color: var(--color-glass-dark);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 0 0 1px var(--color-glass-dark-border);
+}
+
+@utility bg-brand-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-brand-gradient-from) 0%,
+    var(--color-brand-gradient-to) 100%
+  );
+}
+
+@utility bg-camera {
+  background-color: var(--color-camera-bg);
+  background-image: radial-gradient(
+    ellipse 70% 55% at 50% 45%,
+    var(--color-camera-glow),
+    var(--color-camera-bg)
+  );
+}
+
+@utility pressable {
+  transition: transform 150ms ease-out;
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Centered content column: full width on phones, 640px on tablets, 1100px on desktop. */
+@utility page-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 640px;
+  padding-inline: 16px;
+  @media (width >= 64rem) {
+    max-width: 1100px;
+    padding-inline: 32px;
+  }
+}
