@@ -1,4 +1,4 @@
-import { Outlet, ScrollRestoration, type RouteObject } from 'react-router';
+import { Outlet, redirect, ScrollRestoration, type RouteObject } from 'react-router';
 import { EditItemSheet } from '../pages/EditItemSheet';
 import { ErrorPage } from '../pages/ErrorPage';
 import { Home } from '../pages/Home';
@@ -25,7 +25,7 @@ export const routes: RouteObject[] = [
     HydrateFallback: () => null,
     children: [
       { path: 'login', loader: loginLoader, element: <Login /> },
-      { path: 'logout', action: logoutAction },
+      { path: 'logout', loader: () => redirect('/'), action: logoutAction },
       {
         id: 'auth',
         loader: requireUser,

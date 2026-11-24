@@ -21,5 +21,6 @@ export async function loginWithGoogle(credential: string): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
-  await request('/auth/logout', { method: 'POST' });
+  const response = await request('/auth/logout', { method: 'POST' });
+  if (!response.ok) throw new Error(`POST /auth/logout failed: ${response.status}`);
 }

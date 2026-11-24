@@ -99,6 +99,11 @@ describe('authentication', () => {
     );
   });
 
+  it('opening /logout by URL does not render a blank page', async () => {
+    renderAt('/logout');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+  });
+
   it('API down on first load shows the error page', async () => {
     vi.mocked(getMe).mockRejectedValue(new Error('503'));
     renderAt('/');

@@ -44,6 +44,11 @@ describe('auth service', () => {
     await expect(loginWithGoogle('forged')).rejects.toThrow();
   });
 
+  it('logout throws when the API fails, so the session is not assumed gone', async () => {
+    respond(500);
+    await expect(logout()).rejects.toThrow();
+  });
+
   it('logout posts with cookies', async () => {
     respond(204);
     await logout();
