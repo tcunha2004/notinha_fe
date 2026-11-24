@@ -39,3 +39,9 @@ export interface Purchase {
   status: PurchaseStatus;
   items: PurchaseItem[];
 }
+
+export interface User {
+  email: string;
+  name: string;
+  picture: string;
+}
