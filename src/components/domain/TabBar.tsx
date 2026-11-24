@@ -17,7 +17,7 @@ export function TabBar({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="mx-auto flex max-w-[640px] items-center justify-between px-4">
+      <div className="mx-auto flex max-w-[640px] items-center justify-between px-4 md:justify-center md:gap-4">
         <ul className="glass pointer-events-auto flex gap-1 rounded-full p-1">
           {tabs.map(({ to, label, icon: Icon }) => (
             <li key={to}>
