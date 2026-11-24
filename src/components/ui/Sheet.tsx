@@ -15,8 +15,13 @@ export function Sheet({ labelledBy, onClose, children }: SheetProps) {
 
   useEffect(() => {
     const dialog = ref.current;
+    // The sheet is unmounted by routing, not closed, so focus must be handed back manually.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (dialog && !dialog.open) dialog.showModal();
-    return () => dialog?.close();
+    return () => {
+      dialog?.close();
+      opener?.focus();
+    };
   }, []);
 
   return (
