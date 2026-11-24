@@ -4,13 +4,18 @@ Web app where you photograph a grocery receipt (Brazilian NFC-e), an AI reads th
 and the app keeps your purchase and price history. This repo is **only the frontend**; the backend
 (`notinha_api`, FastAPI + LangGraph) lives elsewhere.
 
-> **Current scope: visual only.** No API, auth, camera or persistence yet. All data is mocked behind
-> `src/services/purchases.ts`. Swap that module for real API calls; components never import mocks directly.
+> **Current scope:** auth is real (Sign in with Google, then an `HttpOnly` session cookie issued by the API).
+> Purchases are still mocked behind `src/services/purchases.ts`. Swap that module for real API calls;
+> components never import mocks directly. No camera or persistence yet.
 
 ## Run
 
+The API and Redis must be running for login to work: `docker compose up -d` in the parent folder
+(`~/dev/notinha/`), then start `notinha_api` (see its README).
+
 ```bash
 pnpm install
+cp .env.example .env   # fill VITE_GOOGLE_CLIENT_ID (same client ID as the API's GOOGLE_CLIENT_ID)
 pnpm dev          # http://localhost:5173
 pnpm lint         # ESLint
 pnpm typecheck    # tsc --noEmit (strict)
@@ -38,15 +43,16 @@ src/
 
 ## Routes
 
-| Route                                 | Screen                                             |
-| ------------------------------------- | -------------------------------------------------- |
-| `/`                                   | Início                                             |
-| `/scan`                               | Enviar nota (camera; drag-and-drop on desktop)     |
-| `/scan/processing`                    | Lendo a nota (auto-advances after 2.5s)            |
-| `/purchases/:id/review`               | Nota lida                                          |
-| `/purchases/:id/review/items/:itemId` | Editar item (sheet over the review)                |
-| `/purchases`                          | Compras                                            |
-| `/purchases/:id`                      | Detalhe da compra (items also open the edit sheet) |
+| Route                                 | Screen                                              |
+| ------------------------------------- | --------------------------------------------------- |
+| `/login`                              | Entrar com Google (redirects to `/` when logged in) |
+| `/`                                   | Início                                              |
+| `/scan`                               | Enviar nota (camera; drag-and-drop on desktop)      |
+| `/scan/processing`                    | Lendo a nota (auto-advances after 2.5s)             |
+| `/purchases/:id/review`               | Nota lida                                           |
+| `/purchases/:id/review/items/:itemId` | Editar item (sheet over the review)                 |
+| `/purchases`                          | Compras                                             |
+| `/purchases/:id`                      | Detalhe da compra (items also open the edit sheet)  |
 
 ## Design notes
 
