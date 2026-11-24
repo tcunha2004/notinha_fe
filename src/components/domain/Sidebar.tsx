@@ -1,5 +1,5 @@
-import { Camera, House, ReceiptText } from 'lucide-react';
-import { Link, NavLink } from 'react-router';
+import { Camera, House, LogOut, ReceiptText } from 'lucide-react';
+import { Form, Link, NavLink } from 'react-router';
 import { cn } from '../../lib/cn';
 import { Button } from '../ui/Button';
 
@@ -50,6 +50,12 @@ export function Sidebar({ className }: { className?: string }) {
         <Camera aria-hidden size={20} />
         Enviar nota
       </Button>
+      <Form method="post" action="/logout">
+        <Button type="submit" variant="gray">
+          <LogOut aria-hidden size={20} />
+          Sair
+        </Button>
+      </Form>
     </aside>
   );
 }

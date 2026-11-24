@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderGoogleButton } from '../lib/gis';
-import { getMe, loginWithGoogle } from '../services/auth';
+import { getMe, loginWithGoogle, logout } from '../services/auth';
 import { routes } from './router';
 
 vi.mock('../services/auth', () => ({ getMe: vi.fn(), loginWithGoogle: vi.fn(), logout: vi.fn() }));
@@ -102,5 +103,18 @@ describe('authentication', () => {
     vi.mocked(getMe).mockRejectedValue(new Error('503'));
     renderAt('/');
     expect(await screen.findByText('Algo deu errado')).toBeInTheDocument();
+  });
+
+  it('Sair ends the session and shows the login screen', async () => {
+    vi.mocked(logout).mockImplementation(async () => {
+      vi.mocked(getMe).mockResolvedValue(null); // the backend forgets the session
+    });
+    renderAt('/');
+    await screen.findByRole('heading', { level: 1, name: 'Início' });
+    // jsdom ignores the CSS breakpoints, so both Home's and the Sidebar's buttons exist.
+    const [sair] = screen.getAllByRole('button', { name: 'Sair' });
+    await userEvent.click(sair as HTMLElement);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+    expect(logout).toHaveBeenCalledOnce();
   });
 });
