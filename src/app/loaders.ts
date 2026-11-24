@@ -1,5 +1,23 @@
-import { useRouteLoaderData, type LoaderFunctionArgs } from 'react-router';
+import { redirect, useRouteLoaderData, type LoaderFunctionArgs } from 'react-router';
+import { getMe, logout } from '../services/auth';
 import { getPurchase, listPurchases } from '../services/purchases';
+import type { User } from '../types';
+
+/** Guard for every private route: no session means the login screen. */
+export async function requireUser(): Promise<User> {
+  const user = await getMe();
+  if (!user) throw redirect('/login');
+  return user;
+}
+
+export async function loginLoader() {
+  return (await getMe()) ? redirect('/') : null;
+}
+
+export async function logoutAction() {
+  await logout();
+  return redirect('/login');
+}
 
 export const purchasesLoader = () => listPurchases();
 

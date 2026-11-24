@@ -1,7 +1,21 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderGoogleButton } from '../lib/gis';
+import { getMe, loginWithGoogle, logout } from '../services/auth';
 import { routes } from './router';
+
+vi.mock('../services/auth', () => ({ getMe: vi.fn(), loginWithGoogle: vi.fn(), logout: vi.fn() }));
+vi.mock('../lib/gis', () => ({ renderGoogleButton: vi.fn() }));
+
+const user = { email: 'ana@example.com', name: 'Ana Souza', picture: '' };
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(getMe).mockResolvedValue(user);
+  vi.mocked(renderGoogleButton).mockResolvedValue();
+});
 
 function renderAt(path: string) {
   render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
@@ -34,5 +48,78 @@ describe('routes render without crashing', () => {
   it('unknown purchase shows not found', async () => {
     renderAt('/purchases/nope');
     expect(await screen.findByText('Página não encontrada')).toBeInTheDocument();
+  });
+});
+
+describe('authentication', () => {
+  it.each(['/', '/scan', '/purchases/p2'])(
+    'logged out: %s shows the login screen',
+    async (path) => {
+      vi.mocked(getMe).mockResolvedValue(null);
+      renderAt(path);
+      expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Início' })).not.toBeInTheDocument();
+    },
+  );
+
+  it('logged in: /login redirects to Início', async () => {
+    renderAt('/login');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+  });
+
+  it('a Google credential logs in and opens Início', async () => {
+    vi.mocked(getMe).mockResolvedValueOnce(null);
+    vi.mocked(loginWithGoogle).mockResolvedValue(user);
+    vi.mocked(renderGoogleButton).mockImplementation(async (_el, onCredential) => {
+      onCredential('google-jwt');
+    });
+    renderAt('/login');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+    expect(loginWithGoogle).toHaveBeenCalledWith('google-jwt');
+  });
+
+  it('a rejected login shows the error', async () => {
+    vi.mocked(getMe).mockResolvedValue(null);
+    vi.mocked(loginWithGoogle).mockRejectedValue(new Error('401'));
+    vi.mocked(renderGoogleButton).mockImplementation(async (_el, onCredential) => {
+      onCredential('forged');
+    });
+    renderAt('/login');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível entrar. Tente de novo.',
+    );
+  });
+
+  it('GIS failing to load shows the error', async () => {
+    vi.mocked(getMe).mockResolvedValue(null);
+    vi.mocked(renderGoogleButton).mockRejectedValue(new Error('script blocked'));
+    renderAt('/login');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível entrar. Tente de novo.',
+    );
+  });
+
+  it('opening /logout by URL does not render a blank page', async () => {
+    renderAt('/logout');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+  });
+
+  it('API down on first load shows the error page', async () => {
+    vi.mocked(getMe).mockRejectedValue(new Error('503'));
+    renderAt('/');
+    expect(await screen.findByText('Algo deu errado')).toBeInTheDocument();
+  });
+
+  it('Sair ends the session and shows the login screen', async () => {
+    vi.mocked(logout).mockImplementation(async () => {
+      vi.mocked(getMe).mockResolvedValue(null); // the backend forgets the session
+    });
+    renderAt('/');
+    await screen.findByRole('heading', { level: 1, name: 'Início' });
+    // jsdom ignores the CSS breakpoints, so both Home's and the Sidebar's buttons exist.
+    const [sair] = screen.getAllByRole('button', { name: 'Sair' });
+    await userEvent.click(sair as HTMLElement);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+    expect(logout).toHaveBeenCalledOnce();
   });
 });
