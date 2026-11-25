@@ -1,5 +1,6 @@
 import { TriangleAlert } from 'lucide-react';
 import { formatCurrency, formatQuantity } from '../../lib/format';
+import { itemTitle } from '../../lib/purchase';
 import type { PurchaseItem } from '../../types';
 import { ListRow } from '../ui/ListRow';
 
@@ -8,7 +9,8 @@ export function ItemRow({ item, to }: { item: PurchaseItem; to?: string }) {
   return (
     <ListRow
       to={to}
-      title={item.raw_description}
+      preventScrollReset
+      title={itemTitle(item)}
       subtitle={
         item.flagged ? (
           <span className="text-accent-orange">{quantity} · confira o valor</span>

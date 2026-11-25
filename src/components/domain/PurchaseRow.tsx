@@ -1,4 +1,5 @@
 import { formatCurrency, formatPurchaseDate } from '../../lib/format';
+import { storeName } from '../../lib/purchase';
 import type { Purchase } from '../../types';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
@@ -11,8 +12,8 @@ export function PurchaseRow({ purchase }: { purchase: Purchase }) {
       to={`/purchases/${purchase.id}`}
       chevron
       className="min-h-[66px]"
-      leading={<Avatar name={purchase.store.name} tone={needsReview ? 'orange' : 'green'} />}
-      title={purchase.store.name}
+      leading={<Avatar name={storeName(purchase)} tone={needsReview ? 'orange' : 'green'} />}
+      title={storeName(purchase)}
       subtitle={`${formatPurchaseDate(purchase.purchased_at)} · ${purchase.items.length} itens`}
       trailing={
         <>

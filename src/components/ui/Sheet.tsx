@@ -1,4 +1,6 @@
+import { Check, LoaderCircle, TriangleAlert, X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { GlassButton } from './GlassButton';
 
 interface SheetProps {
   labelledBy: string;
@@ -38,5 +40,60 @@ export function Sheet({ labelledBy, onClose, children }: SheetProps) {
     >
       {children}
     </dialog>
+  );
+}
+
+/** Grab handle + close · title · save row of a form sheet. The save button submits the form. */
+export function SheetFormHeader({
+  titleId,
+  title,
+  onClose,
+  saving,
+  disabled,
+}: {
+  titleId: string;
+  title: string;
+  onClose: () => void;
+  saving: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="mx-auto block h-1.25 w-9 rounded-full bg-label-tertiary lg:hidden"
+      />
+      <div className="mt-3 grid grid-cols-[44px_1fr_44px] items-center gap-2">
+        <GlassButton icon={X} label="Fechar" onClick={onClose} />
+        <h2 id={titleId} className="text-center text-headline">
+          {title}
+        </h2>
+        <button
+          type="submit"
+          aria-label={saving ? 'Salvando…' : 'Salvar'}
+          aria-disabled={disabled || saving}
+          className="pressable grid size-11 place-items-center rounded-full bg-brand-green text-label-on-accent shadow-brand transition-opacity aria-disabled:opacity-40 aria-disabled:shadow-none"
+        >
+          {saving ? (
+            <LoaderCircle aria-hidden size={22} className="animate-spin" />
+          ) : (
+            <Check aria-hidden size={22} strokeWidth={3} />
+          )}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** Shown in a form sheet when the save didn't reach the API. */
+export function SaveError() {
+  return (
+    <p
+      role="alert"
+      className="mt-3 flex items-center gap-2 rounded-field bg-accent-orange-soft px-4 py-3 text-subheadline text-accent-orange"
+    >
+      <TriangleAlert aria-hidden size={18} className="shrink-0" />
+      Não foi possível salvar. Verifique sua conexão e tente de novo.
+    </p>
   );
 }

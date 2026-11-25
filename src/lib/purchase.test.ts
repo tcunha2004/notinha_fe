@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { getPurchase, listPurchases } from '../services/purchases';
+import { purchases } from '../mocks/purchases';
 import { formatPurchaseDate, formatQuantity } from './format';
 import { getInitials, getTotals, groupByMonth } from './purchase';
 
 describe('purchase math', () => {
   it('items of every "ok" purchase add up to its total', async () => {
-    for (const purchase of await listPurchases()) {
+    for (const purchase of purchases) {
       const { difference } = getTotals(purchase);
       expect(difference, purchase.id).toBe(purchase.status === 'ok' ? 0 : 2.26);
     }
   });
 
   it('computes subtotal and discounts for p1', async () => {
-    const p1 = await getPurchase('p1');
+    const p1 = purchases.find((p) => p.id === 'p1');
     if (!p1) throw new Error('p1 missing');
     expect(getTotals(p1)).toEqual({
       itemsTotal: 129.46,
@@ -23,7 +23,7 @@ describe('purchase math', () => {
   });
 
   it('groups by month with totals, counts and averages', async () => {
-    const [nov, oct] = groupByMonth(await listPurchases());
+    const [nov, oct] = groupByMonth(purchases);
     expect(nov).toMatchObject({ key: '2026-11', total: 1248.9, count: 7, average: 178.41 });
     expect(oct).toMatchObject({ key: '2026-10', total: 684.77, count: 3 });
   });

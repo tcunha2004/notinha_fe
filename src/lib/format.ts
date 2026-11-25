@@ -1,5 +1,3 @@
-import type { Unit } from '../types';
-
 const LOCALE = 'pt-BR';
 const currency = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'BRL' });
 const decimal = new Intl.NumberFormat(LOCALE, {
@@ -19,7 +17,7 @@ export const formatCurrency = (value: number) => currency.format(value);
 export const formatDecimal = (value: number) => decimal.format(value);
 
 /** 0,412 for KG; 2 for UN */
-export function formatQuantity(quantity: number, unit: Unit) {
+export function formatQuantity(quantity: number, unit: string) {
   const digits = unit === 'KG' ? 3 : 0;
   return quantity.toLocaleString(LOCALE, {
     minimumFractionDigits: digits,

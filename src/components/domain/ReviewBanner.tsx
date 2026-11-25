@@ -13,8 +13,9 @@ export function ReviewBanner({ itemsTotal, total }: { itemsTotal: number; total:
           Precisa de revisão
         </h2>
         <p className="mt-0.5 text-subheadline">
-          Os itens somam {formatCurrency(itemsTotal)}, mas o total da nota é {formatCurrency(total)}
-          . Confira o item marcado.
+          {itemsTotal === total
+            ? 'Parte da nota não foi lida. Confira os itens marcados.'
+            : `Os itens somam ${formatCurrency(itemsTotal)}, mas o total da nota é ${formatCurrency(total)}. Confira os itens marcados ou toque no total da nota para corrigi-lo.`}
         </p>
       </div>
     </section>

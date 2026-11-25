@@ -1,47 +1,31 @@
+// Test fixtures shaped like the API's GET /purchases answer (newest first).
 import type { Purchase, PurchaseItem, PurchaseStatus, Store, Unit } from '../types';
-
-const USER_ID = 'u1';
 
 const stores = {
   bomDia: {
-    id: 's1',
     cnpj: '12.345.678/0001-90',
     name: 'Mercado Bom Dia',
     address: 'Av. das Palmeiras, 1200',
-    city: 'São Paulo',
-    state: 'SP',
   },
   solNascente: {
-    id: 's2',
     cnpj: '23.456.789/0001-01',
     name: 'Hortifruti Sol Nascente',
     address: 'Rua das Laranjeiras, 85',
-    city: 'São Paulo',
-    state: 'SP',
   },
   valeVerde: {
-    id: 's3',
     cnpj: '34.567.890/0001-12',
     name: 'Super Vale Verde',
     address: 'Av. Brasil, 4500',
-    city: 'São Paulo',
-    state: 'SP',
   },
   emporio: {
-    id: 's4',
     cnpj: '45.678.901/0001-23',
     name: 'Empório Central',
     address: 'Rua XV de Novembro, 310',
-    city: 'São Paulo',
-    state: 'SP',
   },
   trigoBom: {
-    id: 's5',
     cnpj: '56.789.012/0001-34',
     name: 'Padaria Trigo Bom',
     address: 'Rua dos Pinheiros, 742',
-    city: 'São Paulo',
-    state: 'SP',
   },
 } satisfies Record<string, Store>;
 
@@ -68,6 +52,7 @@ function items(purchaseId: string, seeds: ItemSeed[]): PurchaseItem[] {
     unit_price,
     discount: 0,
     total_amount,
+    flagged: false,
     ...extra,
   }));
 }
@@ -119,6 +104,7 @@ function generatedItems(purchaseId: string, count: number, total: number): Purch
       unit_price: cents / quantity / 100,
       discount: 0,
       total_amount: cents / 100,
+      flagged: false,
     };
   });
 }
@@ -134,12 +120,10 @@ function summary(
 ): Purchase {
   return {
     id,
-    user_id: USER_ID,
     store,
     purchased_at,
     total_amount,
     payment_method,
-    photo_url: null,
     status,
     items: generatedItems(id, itemCount, total_amount),
   };
@@ -149,12 +133,10 @@ function summary(
 export const purchases: Purchase[] = [
   {
     id: 'p1',
-    user_id: USER_ID,
     store: stores.bomDia,
     purchased_at: '2026-11-24T18:42:00',
     total_amount: 129.46,
     payment_method: 'Cartão de crédito',
-    photo_url: null,
     status: 'ok',
     items: items('p1', [
       ['ARROZ T1 5KG', 'Arroz tipo 1 5kg', 1, 'UN', 27.9, 27.9],
@@ -169,12 +151,10 @@ export const purchases: Purchase[] = [
   },
   {
     id: 'p2',
-    user_id: USER_ID,
     store: stores.solNascente,
     purchased_at: '2026-11-23T10:15:00',
     total_amount: 42.18,
     payment_method: 'Pix',
-    photo_url: null,
     status: 'needs_review',
     items: items('p2', [
       ['TOMATE ITALIANO KG', 'Tomate italiano', 0.842, 'KG', 8.99, 7.57],

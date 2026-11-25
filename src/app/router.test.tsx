@@ -1,16 +1,32 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderGoogleButton } from '../lib/gis';
 import { getMe, loginWithGoogle, logout } from '../services/auth';
-import { uploadInvoice, UploadError } from '../services/purchases';
+import { purchases } from '../mocks/purchases';
+import {
+  ApiError,
+  deleteItem,
+  deletePurchase,
+  getPurchase,
+  listPurchases,
+  saveItem,
+  saveTotal,
+  uploadInvoice,
+} from '../services/purchases';
 import { routes } from './router';
 
 vi.mock('../services/auth', () => ({ getMe: vi.fn(), loginWithGoogle: vi.fn(), logout: vi.fn() }));
 vi.mock('../lib/gis', () => ({ renderGoogleButton: vi.fn() }));
 vi.mock('../services/purchases', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/purchases')>()),
+  listPurchases: vi.fn(),
+  getPurchase: vi.fn(),
+  saveItem: vi.fn(),
+  saveTotal: vi.fn(),
+  deleteItem: vi.fn(),
+  deletePurchase: vi.fn(),
   uploadInvoice: vi.fn(),
 }));
 
@@ -20,6 +36,8 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getMe).mockResolvedValue(user);
   vi.mocked(renderGoogleButton).mockResolvedValue();
+  vi.mocked(listPurchases).mockResolvedValue(purchases);
+  vi.mocked(getPurchase).mockImplementation(async (id) => purchases.find((p) => p.id === id));
 });
 
 function renderAt(path: string, state?: unknown) {
@@ -178,28 +196,26 @@ describe('sending a receipt', () => {
     ).toBeInTheDocument();
   });
 
-  const success = { level: 1, name: 'Nota lida com sucesso!' } as const;
+  const success = { level: 1, name: 'Nota lida' } as const;
 
-  it('ok shows the success screen', async () => {
-    vi.mocked(uploadInvoice).mockResolvedValue({ id: 'p2', status: 'ok' });
-    processing();
-    expect(await screen.findByRole('heading', success)).toHaveFocus();
-    expect(screen.getByRole('status')).toHaveTextContent('já está salva');
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar outra nota' }));
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Enviar nota' }),
-    ).toBeInTheDocument();
-  });
-
-  it('needs_review shows the success screen with the total warning', async () => {
-    vi.mocked(uploadInvoice).mockResolvedValue({ id: 'p1', status: 'needs_review' });
+  it('ok opens the read purchase with the sum check', async () => {
+    vi.mocked(uploadInvoice).mockResolvedValue({ id: 'p1', status: 'ok' });
     processing();
     await screen.findByRole('heading', success);
-    expect(screen.getByRole('status')).toHaveTextContent('não bateu');
+    expect(getPurchase).toHaveBeenCalledWith('p1');
+    expect(screen.getByRole('status')).toHaveTextContent('A soma dos itens confere com o total');
+    expect(screen.getByText('Mercado Bom Dia')).toBeInTheDocument();
+  });
+
+  it('needs_review opens the read purchase with the warning', async () => {
+    vi.mocked(uploadInvoice).mockResolvedValue({ id: 'p2', status: 'needs_review' });
+    processing();
+    await screen.findByRole('heading', success);
+    expect(screen.getByRole('status')).toHaveTextContent('não confere');
   });
 
   it('unreadable photo explains it and offers a new photo', async () => {
-    vi.mocked(uploadInvoice).mockRejectedValue(new UploadError(422));
+    vi.mocked(uploadInvoice).mockRejectedValue(new ApiError(422));
     processing();
     const heading = await screen.findByRole('heading', {
       level: 1,
@@ -226,9 +242,119 @@ describe('sending a receipt', () => {
   });
 
   it('an expired session goes to login', async () => {
-    vi.mocked(uploadInvoice).mockRejectedValue(new UploadError(401));
+    vi.mocked(uploadInvoice).mockRejectedValue(new ApiError(401));
     processing();
     vi.mocked(getMe).mockResolvedValue(null);
     expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+  });
+});
+
+describe('correcting items', () => {
+  it('saving an edit sends the parsed numbers and closes the sheet', async () => {
+    renderAt('/purchases/p1/review/items/p1-i8');
+    const name = await screen.findByDisplayValue('Pão francês');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Pão de sal');
+    await userEvent.click(screen.getByRole('radio', { name: 'UN' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(saveItem).toHaveBeenCalledWith('p1', 'p1-i8', {
+      description: 'Pão de sal',
+      quantity: 0.412,
+      unit: 'UN',
+      unit_price: 15.9,
+      discount: 0,
+    });
+    expect(getPurchase).toHaveBeenCalledTimes(2); // reloaded: totals and status refresh
+  });
+
+  it('a failed save keeps the sheet open with the error', async () => {
+    vi.mocked(saveItem).mockRejectedValue(new TypeError('Failed to fetch'));
+    renderAt('/purchases/p1/review/items/p1-i8');
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar');
+    expect(screen.getByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
+  });
+
+  it('adds an item the reading missed', async () => {
+    renderAt('/purchases/p2');
+    await userEvent.click(await screen.findByRole('link', { name: 'Adicionar item que faltou' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Novo item' });
+    expect(dialog).not.toHaveTextContent('Como está na nota');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    expect(saveItem).not.toHaveBeenCalled(); // no name yet
+    await userEvent.type(screen.getByLabelText('Descrição'), 'Sacola');
+    await userEvent.type(screen.getByLabelText(/Preço unitário/), '0,10');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(saveItem).toHaveBeenCalledWith('p2', undefined, {
+      description: 'Sacola',
+      quantity: 1,
+      unit: 'UN',
+      unit_price: 0.1,
+      discount: 0,
+    });
+  });
+});
+
+describe('correcting the receipt total', () => {
+  it('tapping the total opens it; "Usar a soma" fills in the items sum and saves', async () => {
+    renderAt('/purchases/p2'); // items add up to less than the printed total
+    await userEvent.click(await screen.findByRole('link', { name: /Corrigir total da nota/ }));
+    expect(await screen.findByRole('dialog', { name: 'Total da nota' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Usar a soma' }));
+    expect(screen.getByText('Confere com a soma dos itens.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    const p2 = purchases.find((p) => p.id === 'p2');
+    expect(saveTotal).toHaveBeenCalledWith('p2', p2 && p2.total_amount - 2.26);
+  });
+
+  it('a failed save keeps the sheet open with the error', async () => {
+    vi.mocked(saveTotal).mockRejectedValue(new TypeError('Failed to fetch'));
+    renderAt('/purchases/p1/review/total');
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar');
+  });
+});
+
+describe('deleting', () => {
+  it('removing an item asks to confirm, then deletes it and closes the sheet', async () => {
+    renderAt('/purchases/p1/review/items/p1-i8');
+    await userEvent.click(await screen.findByRole('button', { name: 'Remover item' }));
+    expect(deleteItem).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Remover' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(deleteItem).toHaveBeenCalledWith('p1', 'p1-i8');
+  });
+
+  it('a new item has nothing to remove', async () => {
+    renderAt('/purchases/p1/items/new');
+    await screen.findByRole('dialog', { name: 'Novo item' });
+    expect(screen.queryByRole('button', { name: 'Remover item' })).not.toBeInTheDocument();
+  });
+
+  it('deleting a purchase confirms, then goes back to the list', async () => {
+    renderAt('/purchases/p2');
+    await userEvent.click(await screen.findByRole('link', { name: 'Excluir compra' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Excluir esta compra?' });
+    expect(dialog).toHaveTextContent('Hortifruti Sol Nascente');
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir compra' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Compras' })).toBeInTheDocument();
+    expect(deletePurchase).toHaveBeenCalledWith('p2');
+  });
+
+  it('deleting right after the scan goes home', async () => {
+    renderAt('/purchases/p1/review/delete');
+    await userEvent.click(await screen.findByRole('button', { name: 'Excluir compra' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+  });
+
+  it('a failed delete keeps the sheet open with the error', async () => {
+    vi.mocked(deletePurchase).mockRejectedValue(new TypeError('Failed to fetch'));
+    renderAt('/purchases/p2/delete');
+    await userEvent.click(await screen.findByRole('button', { name: 'Excluir compra' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível excluir');
   });
 });

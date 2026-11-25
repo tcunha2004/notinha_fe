@@ -1,19 +1,18 @@
-import { Check, Lightbulb, TriangleAlert } from 'lucide-react';
+import { Lightbulb, TriangleAlert } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { StepList, type Step } from '../components/domain/StepList';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { uploadInvoice, UploadError } from '../services/purchases';
-import type { PurchaseStatus } from '../types';
+import { uploadInvoice, ApiError } from '../services/purchases';
 
 /** After this long, reassure the user it hasn't frozen (the agent may retry up to 3x). */
 const SLOW_MS = 10_000;
 
 /** 'unreadable' = the API said nothing on the photo is legible (422): a new photo is needed.
  *  'failed' = network or server error: the photo is fine, so we offer to resend the same one. */
-type Phase = 'reading' | 'unreadable' | 'failed' | PurchaseStatus;
+type Phase = 'reading' | 'unreadable' | 'failed';
 
 const lineWidths = [
   'w-3/5',
@@ -34,8 +33,8 @@ const tips = [
   'Celular parado, para a foto não sair tremida',
 ];
 
-/** Receipt thumbnail: a green light sweeps over it while reading; then a check (read) or an alert (failed). */
-function ScanningReceipt({ result }: { result?: 'read' | 'failed' }) {
+/** Receipt thumbnail: a green light sweeps over it while reading; an alert when it failed. */
+function ScanningReceipt({ failed }: { failed: boolean }) {
   return (
     <div
       aria-hidden
@@ -46,21 +45,14 @@ function ScanningReceipt({ result }: { result?: 'read' | 'failed' }) {
           <span key={i} className={`h-1 rounded-full bg-paper-line ${width}`} />
         ))}
       </div>
-      {result === 'read' && (
-        <span className="absolute inset-0 grid place-items-center bg-paper/60">
-          <span className="grid size-14 place-items-center rounded-full bg-brand-green text-label-on-accent shadow-brand animate-dialog-in">
-            <Check size={30} strokeWidth={3} />
-          </span>
-        </span>
-      )}
-      {result === 'failed' && (
+      {failed && (
         <span className="absolute inset-0 grid place-items-center bg-paper/60">
           <span className="grid size-14 place-items-center rounded-full bg-accent-orange-soft">
             <TriangleAlert size={28} className="text-accent-orange" />
           </span>
         </span>
       )}
-      {!result && (
+      {!failed && (
         <span className="absolute inset-x-0 top-0 h-3/5 animate-scan border-b-2 border-brand-green bg-linear-to-b from-transparent to-brand-green/35" />
       )}
     </div>
@@ -76,20 +68,6 @@ function readingSteps(slow: boolean): Step[] {
       status: 'active',
     },
     { title: 'Conferindo o total', subtitle: 'Soma dos itens × total da nota', status: 'pending' },
-  ];
-}
-
-function readSteps(status: PurchaseStatus): Step[] {
-  return [
-    { title: 'Foto recebida', subtitle: 'Guardada com segurança', status: 'done' },
-    { title: 'Itens extraídos', subtitle: 'Loja, data e cada item da compra', status: 'done' },
-    status === 'ok'
-      ? { title: 'Total conferido', subtitle: 'A soma dos itens bate com a nota', status: 'done' }
-      : {
-          title: 'Total com diferença',
-          subtitle: 'Vale conferir os itens depois',
-          status: 'error',
-        },
   ];
 }
 
@@ -113,13 +91,12 @@ export function Processing() {
   const send = useCallback(
     async (image: File) => {
       try {
-        const { status } = await uploadInvoice(image);
-        // ponytail: success screen instead of opening /purchases/:id, which still reads the mocks.
-        // Navigate to the purchase (or its review) once the purchase screens use the API.
-        if (alive.current) setPhase(status);
+        const { id } = await uploadInvoice(image);
+        // Straight to "Nota lida": it shows what was read and whether it needs a review.
+        if (alive.current) navigate(`/purchases/${id}/review`, { replace: true });
       } catch (error) {
         if (!alive.current) return;
-        const code = error instanceof UploadError ? error.status : 0; // 0 = no connection
+        const code = error instanceof ApiError ? error.status : 0; // 0 = no connection
         if (code === 401) navigate('/login', { replace: true });
         else setPhase(code === 422 ? 'unreadable' : 'failed');
       }
@@ -157,36 +134,9 @@ export function Processing() {
   };
   const newPhoto = () => navigate('/scan', { replace: true });
 
-  if (phase === 'ok' || phase === 'needs_review') {
-    return (
-      <main className="mx-auto flex min-h-dvh max-w-[440px] flex-col px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))] animate-push">
-        <ScanningReceipt result="read" />
-        <div role="status" className="mt-8 text-center">
-          <h1 ref={headingRef} tabIndex={-1} className="text-title-1 outline-none">
-            Nota lida com sucesso!
-          </h1>
-          <p className="mt-1 text-body text-label-secondary">
-            {phase === 'ok'
-              ? 'Sua compra já está salva e organizada.'
-              : 'Sua compra foi salva, mas o total da nota não bateu com a soma dos itens.'}
-          </p>
-        </div>
-        <div className="mt-6">
-          <StepList steps={readSteps(phase)} />
-        </div>
-        <div className="mt-auto flex flex-col gap-3 pt-8">
-          <Button onClick={newPhoto}>Enviar outra nota</Button>
-          <Button variant="gray" to="/">
-            Voltar para o início
-          </Button>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="mx-auto flex min-h-dvh max-w-[440px] flex-col px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))] animate-push">
-      <ScanningReceipt result={phase === 'reading' ? undefined : 'failed'} />
+      <ScanningReceipt failed={phase !== 'reading'} />
 
       {phase === 'reading' ? (
         <>

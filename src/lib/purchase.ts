@@ -1,4 +1,5 @@
 import type { Purchase, PurchaseItem } from '../types';
+import { formatPurchaseDate } from './format';
 
 /** Sums money in integer cents to dodge floating-point drift. */
 export function sumAmounts(values: number[]) {
@@ -54,4 +55,17 @@ export function getInitials(name: string) {
     .join('');
 }
 
-export const itemLabel = (item: PurchaseItem) => item.description ?? item.raw_description;
+/** Friendly name for the edit form: the user's own, else what the receipt says. */
+export const itemLabel = (item: PurchaseItem) => item.description ?? item.raw_description ?? '';
+
+/** List title: the receipt's text (as in the design), or the name of a hand-added item. */
+export const itemTitle = (item: PurchaseItem) => item.raw_description ?? item.description ?? '';
+
+/** The CNPJ may be unreadable, and then there's no store at all. */
+export const storeName = (purchase: Purchase) => purchase.store?.name ?? 'Loja não identificada';
+
+/** "Hoje, 18:42 · Cartão de crédito" (payment left out when it wasn't read). */
+export const purchaseSubtitle = (purchase: Purchase) =>
+  [formatPurchaseDate(purchase.purchased_at, { withTime: true }), purchase.payment_method]
+    .filter(Boolean)
+    .join(' · ');

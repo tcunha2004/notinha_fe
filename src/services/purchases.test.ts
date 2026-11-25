@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { uploadInvoice, UploadError } from './purchases';
+import { uploadInvoice, ApiError } from './purchases';
 
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
@@ -17,10 +17,10 @@ describe('uploadInvoice', () => {
     expect((init.body as FormData).get('image')).toBe(photo);
   });
 
-  it('throws UploadError carrying the HTTP status', async () => {
+  it('throws ApiError carrying the HTTP status', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 422 }));
     await expect(uploadInvoice(photo)).rejects.toMatchObject({
-      constructor: UploadError,
+      constructor: ApiError,
       status: 422,
     });
   });

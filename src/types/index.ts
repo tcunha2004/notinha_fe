@@ -3,39 +3,46 @@ export type PurchaseStatus = 'ok' | 'needs_review';
 export type Unit = 'UN' | 'KG' | 'L';
 
 export interface Store {
-  id: string;
   cnpj: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
+  name: string | null;
+  address: string | null;
 }
 
 export interface PurchaseItem {
   id: string;
   purchase_id: string;
   position: number;
-  raw_description: string;
+  /** As printed on the receipt; null for items the user added by hand. */
+  raw_description: string | null;
+  /** The user's friendly name ("Pão francês"), set when they edit the item. */
+  description: string | null;
   code: string | null;
   quantity: number;
-  unit: Unit;
+  /** Usually UN, KG or L, but the receipt may print others (PCT, CX…). */
+  unit: string;
   unit_price: number;
   discount: number;
   total_amount: number;
-  /** UI-only for now: the agent marks the item that likely breaks the sum. */
-  flagged?: boolean;
-  /** UI-only for now: human-friendly name ("Pão francês"); not in the API schema yet. */
-  description?: string;
+  /** Something wasn't read, or quantity × price doesn't give the line total. */
+  flagged: boolean;
+}
+
+/** What the edit sheet sends; the API recomputes the line total. */
+export interface ItemInput {
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  discount: number;
 }
 
 export interface Purchase {
   id: string;
-  user_id: string;
-  store: Store;
+  /** null when the CNPJ couldn't be read. */
+  store: Store | null;
   purchased_at: string;
   total_amount: number;
-  payment_method: string;
-  photo_url: string | null;
+  payment_method: string | null;
   status: PurchaseStatus;
   items: PurchaseItem[];
 }

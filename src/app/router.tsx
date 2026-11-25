@@ -1,4 +1,5 @@
 import { Outlet, redirect, ScrollRestoration, type RouteObject } from 'react-router';
+import { DeletePurchaseSheet } from '../pages/DeletePurchaseSheet';
 import { EditItemSheet } from '../pages/EditItemSheet';
 import { ErrorPage } from '../pages/ErrorPage';
 import { Home } from '../pages/Home';
@@ -8,10 +9,32 @@ import { PurchaseDetail } from '../pages/PurchaseDetail';
 import { Purchases } from '../pages/Purchases';
 import { Review } from '../pages/Review';
 import { Scan } from '../pages/Scan';
+import { TotalSheet } from '../pages/TotalSheet';
 import { AppShell } from './AppShell';
-import { loginLoader, logoutAction, purchaseLoader, purchasesLoader, requireUser } from './loaders';
+import {
+  deletePurchaseAction,
+  itemAction,
+  loginLoader,
+  logoutAction,
+  purchaseLoader,
+  purchasesLoader,
+  requireUser,
+  totalAction,
+} from './loaders';
 
-const editItemRoute: RouteObject = { path: 'items/:itemId', element: <EditItemSheet /> };
+const editItemRoute: RouteObject = {
+  path: 'items/:itemId',
+  action: itemAction,
+  element: <EditItemSheet />,
+};
+const totalRoute: RouteObject = { path: 'total', action: totalAction, element: <TotalSheet /> };
+const deleteRoute: RouteObject = {
+  path: 'delete',
+  action: deletePurchaseAction,
+  element: <DeletePurchaseSheet />,
+};
+// Sheets that open over both the detail and the review screen.
+const sheetRoutes = [editItemRoute, totalRoute, deleteRoute];
 
 export const routes: RouteObject[] = [
   {
@@ -42,9 +65,9 @@ export const routes: RouteObject[] = [
                 children: [
                   {
                     element: <PurchaseDetail />,
-                    children: [{ index: true, element: null }, editItemRoute],
+                    children: [{ index: true, element: null }, ...sheetRoutes],
                   },
-                  { path: 'review', element: <Review />, children: [editItemRoute] },
+                  { path: 'review', element: <Review />, children: sheetRoutes },
                 ],
               },
             ],

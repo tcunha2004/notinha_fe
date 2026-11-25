@@ -12,7 +12,7 @@ interface PurchaseLayoutProps {
  */
 export function PurchaseLayout({ children, aside, footer }: PurchaseLayoutProps) {
   return (
-    <div className="mt-2 grid gap-5 lg:grid-cols-2 lg:grid-rows-[repeat(4,auto)_1fr] lg:gap-x-8">
+    <div className="mt-2 grid grid-cols-1 gap-5 lg:grid-cols-2 lg:grid-rows-[repeat(4,auto)_1fr] lg:gap-x-8">
       {children}
       <div className="lg:col-start-2 lg:row-span-full lg:row-start-1">{aside}</div>
       {footer}

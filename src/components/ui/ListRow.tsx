@@ -10,6 +10,8 @@ interface ListRowProps {
   trailing?: ReactNode;
   to?: string;
   chevron?: boolean;
+  /** Keep the scroll position when the link opens a sheet over the page. */
+  preventScrollReset?: boolean;
   className?: string;
 }
 
@@ -21,6 +23,7 @@ export function ListRow({
   trailing,
   to,
   chevron = false,
+  preventScrollReset,
   className,
 }: ListRowProps) {
   const content = (
@@ -44,6 +47,7 @@ export function ListRow({
       {to ? (
         <Link
           to={to}
+          preventScrollReset={preventScrollReset}
           className={cn(
             classes,
             'transition-colors hover:bg-fill-tertiary active:bg-fill-tertiary focus-visible:-outline-offset-2',
