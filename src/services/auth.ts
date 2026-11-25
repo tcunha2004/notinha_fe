@@ -1,7 +1,5 @@
 import type { User } from '../types';
-
-const request = (path: string, init?: RequestInit) =>
-  fetch(`${import.meta.env.VITE_API_URL}${path}`, { credentials: 'include', ...init });
+import { request } from './api';
 
 export async function getMe(): Promise<User | null> {
   const response = await request('/auth/me');

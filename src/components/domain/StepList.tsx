@@ -1,14 +1,19 @@
-import { Check } from 'lucide-react';
+import { Check, TriangleAlert } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Card, CardList } from '../ui/Card';
 
 export interface Step {
   title: string;
   subtitle: string;
-  status: 'done' | 'active' | 'pending';
+  status: 'done' | 'active' | 'pending' | 'error';
 }
 
-const statusText = { done: 'concluída', active: 'em andamento', pending: 'pendente' };
+const statusText = {
+  done: 'concluída',
+  active: 'em andamento',
+  pending: 'pendente',
+  error: 'falhou',
+};
 
 function StepIcon({ status }: { status: Step['status'] }) {
   if (status === 'done') {
@@ -17,6 +22,9 @@ function StepIcon({ status }: { status: Step['status'] }) {
         <Check aria-hidden size={15} strokeWidth={3} />
       </span>
     );
+  }
+  if (status === 'error') {
+    return <TriangleAlert aria-hidden size={24} className="text-accent-orange" />;
   }
   if (status === 'active') {
     return (

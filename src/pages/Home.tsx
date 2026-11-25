@@ -1,11 +1,10 @@
-import { LogOut } from 'lucide-react';
-import { Form, Link, useLoaderData } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
+import { ProfileMenu } from '../components/domain/ProfileMenu';
 import { PurchaseRow } from '../components/domain/PurchaseRow';
 import { ScanCta } from '../components/domain/ScanCta';
 import { SummaryCard } from '../components/domain/SummaryCard';
 import { Card, CardList } from '../components/ui/Card';
-import { GlassButton } from '../components/ui/GlassButton';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { formatLongDay, formatMonth } from '../lib/format';
 import { groupByMonth } from '../lib/purchase';
@@ -26,9 +25,7 @@ export function Home() {
           </p>
           <h1 className="text-large-title">Início</h1>
         </div>
-        <Form method="post" action="/logout">
-          <GlassButton type="submit" icon={LogOut} label="Sair" />
-        </Form>
+        <ProfileMenu />
       </header>
 
       <div className="mt-5 grid gap-5 md:grid-cols-2">
