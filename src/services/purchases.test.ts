@@ -24,4 +24,11 @@ describe('uploadInvoice', () => {
       status: 422,
     });
   });
+
+  it('409 throws ApiError with the already saved purchase id', async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ detail: { purchase_id: 'p9' } }, { status: 409 }),
+    );
+    await expect(uploadInvoice(photo)).rejects.toMatchObject({ status: 409, purchaseId: 'p9' });
+  });
 });

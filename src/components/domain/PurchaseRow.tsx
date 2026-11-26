@@ -6,20 +6,21 @@ import { Badge } from '../ui/Badge';
 import { ListRow } from '../ui/ListRow';
 
 export function PurchaseRow({ purchase }: { purchase: Purchase }) {
-  const needsReview = purchase.status === 'needs_review';
+  const count = purchase.items.length;
   return (
     <ListRow
       to={`/purchases/${purchase.id}`}
-      chevron
-      className="min-h-[66px]"
-      leading={<Avatar name={storeName(purchase)} tone={needsReview ? 'orange' : 'green'} />}
+      density="compra"
+      leading={<Avatar name={storeName(purchase)} />}
       title={storeName(purchase)}
-      subtitle={`${formatPurchaseDate(purchase.purchased_at)} · ${purchase.items.length} itens`}
+      subtitle={`${formatPurchaseDate(purchase.purchased_at)} · ${count} ${count === 1 ? 'item' : 'itens'}`}
       trailing={
-        <>
-          <span className="block text-headline">{formatCurrency(purchase.total_amount)}</span>
-          {needsReview && <Badge tone="warning">Revisar</Badge>}
-        </>
+        <span className="flex flex-col items-end gap-1">
+          <span className="texto-corpo-forte whitespace-nowrap tabular-nums">
+            {formatCurrency(purchase.total_amount)}
+          </span>
+          {purchase.status === 'needs_review' && <Badge tone="atencao">Revisar</Badge>}
+        </span>
       }
     />
   );

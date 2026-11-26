@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { cn } from '../../lib/cn';
@@ -9,50 +8,55 @@ interface ListRowProps {
   leading?: ReactNode;
   trailing?: ReactNode;
   to?: string;
-  chevron?: boolean;
+  /** `compra`: 72px with an avatar. `item`: 64px. */
+  density?: 'compra' | 'item';
+  /** Paints the row in the attention color (an item to check). */
+  alert?: boolean;
   /** Keep the scroll position when the link opens a sheet over the page. */
   preventScrollReset?: boolean;
-  className?: string;
 }
 
-/** One row of a grouped list. Must live inside a `<CardList>`. */
+/** Edge-to-edge row. The whole row is tappable (no chevron); the name truncates, the amount never wraps. */
 export function ListRow({
   title,
   subtitle,
   leading,
   trailing,
   to,
-  chevron = false,
+  density = 'item',
+  alert = false,
   preventScrollReset,
-  className,
 }: ListRowProps) {
   const content = (
     <>
       {leading}
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-body">{title}</div>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate texto-corpo-forte">{title}</span>
         {subtitle && (
-          <div className="truncate text-subheadline text-label-secondary">{subtitle}</div>
+          <span
+            className={cn(
+              'truncate texto-legenda tabular-nums',
+              alert ? 'text-atencao-700' : 'text-texto-secundario',
+            )}
+          >
+            {subtitle}
+          </span>
         )}
       </div>
-      {trailing && <div className="shrink-0 text-right">{trailing}</div>}
-      {chevron && (
-        <ChevronRight aria-hidden size={18} className="-mr-1 shrink-0 text-label-tertiary" />
-      )}
+      {trailing}
     </>
   );
-  const classes = cn('flex min-h-16 items-center gap-3 px-4 py-3', className);
+  const classes = cn(
+    'flex items-center',
+    density === 'compra' ? 'min-h-18 gap-3.5 py-3' : 'min-h-16 gap-3 py-3.5',
+    alert ? 'rounded-md bg-atencao-50 px-3 text-tinta' : 'px-5',
+    to && 'transition-colors focus-visible:-outline-offset-2',
+    to && !alert && 'hover:bg-superficie active:bg-superficie',
+  );
   return (
-    <li>
+    <li className={cn(alert && 'px-2')}>
       {to ? (
-        <Link
-          to={to}
-          preventScrollReset={preventScrollReset}
-          className={cn(
-            classes,
-            'transition-colors hover:bg-fill-tertiary active:bg-fill-tertiary focus-visible:-outline-offset-2',
-          )}
-        >
+        <Link to={to} preventScrollReset={preventScrollReset} className={classes}>
           {content}
         </Link>
       ) : (

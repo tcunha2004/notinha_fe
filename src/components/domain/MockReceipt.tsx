@@ -35,15 +35,15 @@ export function MockReceipt({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        'bg-paper px-4 pt-5 pb-4 text-receipt text-paper-ink uppercase shadow-paper',
+        'rounded-[6px] bg-papel px-3.5 pt-4 pb-3 font-mono text-[9.5px] leading-[14px] text-cinza-800 uppercase',
         className,
       )}
     >
-      <p className="text-center text-receipt-lg font-semibold">Mercado Bom Dia LTDA</p>
+      <p className="text-center text-[11px] font-bold">Mercado Bom Dia LTDA</p>
       <p className="mt-1 text-center">CNPJ 12.345.678/0001-90</p>
       <p className="text-center">Av. das Palmeiras, 1200 · Centro</p>
-      <hr className="my-2.5 border-t border-dashed border-paper-line" />
-      <ul className="space-y-0.5">
+      <hr className="my-1.5 border-t border-dashed border-cinza-400" />
+      <ul>
         {LINES.map(([name, value]) => (
           <li key={name} className="flex justify-between gap-2">
             <span className="truncate">{name}</span>
@@ -51,21 +51,21 @@ export function MockReceipt({ className }: { className?: string }) {
           </li>
         ))}
       </ul>
-      <hr className="my-2.5 border-t border-dashed border-paper-line" />
-      <p className="flex justify-between text-receipt-lg font-semibold">
+      <hr className="my-1.5 border-t border-dashed border-cinza-400" />
+      <p className="flex justify-between text-[11px] font-bold">
         <span>Total R$</span>
         <span>129,46</span>
       </p>
       <svg
         viewBox={`0 0 ${QR_SIZE} ${QR_SIZE}`}
-        className="mx-auto mt-2 size-22 fill-paper-ink"
+        className="mx-auto mt-2.5 size-15 fill-cinza-800"
         shapeRendering="crispEdges"
       >
         <path d={QR} fillRule="evenodd" />
       </svg>
       <p className="mt-1.5 text-center font-semibold">Chave de acesso</p>
-      <p className="text-center text-receipt-sm whitespace-nowrap">
-        3126 1112 3456 7800 0190 6500 1000 0123 4510 0012 3456
+      <p className="text-center text-[7.5px] tracking-[0.02em] whitespace-nowrap">
+        3126 1112 3456 7800 0190 6500 1000 0123
       </p>
     </div>
   );

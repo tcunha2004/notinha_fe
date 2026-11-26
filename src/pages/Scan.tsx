@@ -1,8 +1,9 @@
-import { Image, Sparkles, TriangleAlert, Upload, X, Zap } from 'lucide-react';
+import { Image, ScanLine, TriangleAlert, Upload, X, Zap } from 'lucide-react';
 import { useState, type DragEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { MockReceipt } from '../components/domain/MockReceipt';
-import { GlassButton } from '../components/ui/GlassButton';
+import { IconButton } from '../components/ui/IconButton';
+import { TopBar } from '../components/ui/TopBar';
 import { cn } from '../lib/cn';
 
 const PROCESSING = '/scan/processing';
@@ -44,29 +45,30 @@ function PickInput({
     />
   );
 }
-const corner = 'absolute size-13 border-brand-green';
+
+const corner = 'absolute size-11 border-marca';
 
 /** Green corner brackets framing the receipt. */
 function Viewfinder() {
   return (
-    <div className="relative mx-auto my-4 flex w-[min(300px,78vw)] flex-1 items-center justify-center py-6 lg:hidden">
+    <div className="relative mx-7 mt-5 mb-4 flex flex-1 items-center justify-center py-6 lg:hidden">
       <span
         aria-hidden
-        className={cn(corner, 'top-0 left-0 rounded-tl-[22px] border-t-4 border-l-4')}
+        className={cn(corner, 'top-0 left-0 rounded-tl-[18px] border-t-4 border-l-4')}
       />
       <span
         aria-hidden
-        className={cn(corner, 'top-0 right-0 rounded-tr-[22px] border-t-4 border-r-4')}
+        className={cn(corner, 'top-0 right-0 rounded-tr-[18px] border-t-4 border-r-4')}
       />
       <span
         aria-hidden
-        className={cn(corner, 'bottom-0 left-0 rounded-bl-[22px] border-b-4 border-l-4')}
+        className={cn(corner, 'bottom-0 left-0 rounded-bl-[18px] border-b-4 border-l-4')}
       />
       <span
         aria-hidden
-        className={cn(corner, 'right-0 bottom-0 rounded-br-[22px] border-r-4 border-b-4')}
+        className={cn(corner, 'right-0 bottom-0 rounded-br-[18px] border-r-4 border-b-4')}
       />
-      <MockReceipt className="w-[80%] rotate-2" />
+      <MockReceipt className="w-58 -rotate-2" />
     </div>
   );
 }
@@ -89,15 +91,15 @@ function DropZone({ onPick }: { onPick: OnPick }) {
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
       className={cn(
-        'glass-dark mx-auto my-8 hidden w-full max-w-[560px] flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-brand-green/60 p-10 text-center transition-colors hover:border-brand-green has-focus-visible:outline-2 has-focus-visible:outline-accent-blue lg:flex',
-        dragging && 'border-brand-green bg-brand-green/10',
+        'mx-5 my-8 hidden flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-marca/60 p-10 text-center transition-colors hover:border-marca has-focus-visible:outline-2 has-focus-visible:outline-branco lg:flex',
+        dragging ? 'border-marca bg-cinza-800' : 'bg-tinta',
       )}
     >
-      <span className="grid size-16 place-items-center rounded-full bg-brand-green/15 text-brand-green">
+      <span className="grid size-16 place-items-center rounded-full bg-cinza-800 text-marca">
         <Upload aria-hidden size={28} />
       </span>
-      <span className="text-title-3">Arraste a foto da nota ou clique para escolher</span>
-      <span className="text-subheadline text-label-on-accent/60">
+      <span className="texto-titulo-2">Arraste a foto da nota ou clique para escolher</span>
+      <span className="texto-legenda text-cinza-400">
         JPG ou PNG até 10 MB, com o QR Code visível
       </span>
       <PickInput onPick={onPick} />
@@ -115,33 +117,37 @@ export function Scan() {
     setError(problem);
     if (!problem) navigate(PROCESSING, { state: { file } });
   };
+  const hint =
+    'mx-auto mt-3 flex h-9 items-center gap-2 rounded-full bg-cinza-800 px-4 text-sm leading-[18px] font-medium';
+
   return (
-    <main className="flex min-h-dvh flex-col bg-camera text-label-on-accent animate-push">
+    <main className="flex min-h-dvh flex-col bg-[#000] text-branco animate-tela">
       <div className="page-container flex flex-1 flex-col pt-[max(12px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
-        <header className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
-          <GlassButton to="/" icon={X} label="Fechar" tone="dark" />
-          <h1 className="text-center text-title-3">Enviar nota</h1>
-          <GlassButton
-            icon={Zap}
-            label="Flash"
-            tone="dark"
-            aria-pressed={flash}
-            onClick={() => setFlash(!flash)}
-            className={cn(flash && 'text-accent-orange')}
+        <header>
+          <TopBar
+            leading={<IconButton to="/" icon={X} label="Fechar" tone="camera" />}
+            title={<h1>Enviar nota</h1>}
+            trailing={
+              <IconButton
+                icon={Zap}
+                label={flash ? 'Desligar flash' : 'Ligar flash'}
+                tone="camera"
+                aria-pressed={flash}
+                onClick={() => setFlash(!flash)}
+                className={cn(flash && 'text-atencao-500')}
+              />
+            }
           />
         </header>
 
         {error ? (
-          <p
-            role="alert"
-            className="glass-dark mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 text-subheadline font-semibold"
-          >
-            <TriangleAlert aria-hidden size={16} className="shrink-0 text-accent-orange" />
+          <p role="alert" className={hint}>
+            <TriangleAlert aria-hidden size={18} className="shrink-0 text-atencao-500" />
             {error}
           </p>
         ) : (
-          <p className="glass-dark mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 text-subheadline font-semibold">
-            <Sparkles aria-hidden size={16} className="shrink-0 text-brand-green" />
+          <p className={hint}>
+            <ScanLine aria-hidden size={18} className="shrink-0 text-marca" />
             Enquadre a nota inteira, com o QR Code
           </p>
         )}
@@ -149,17 +155,17 @@ export function Scan() {
         <Viewfinder />
         <DropZone onPick={pick} />
 
-        <div className="mx-auto grid w-[min(300px,78vw)] grid-cols-[1fr_auto_1fr] items-center lg:hidden">
-          <label className="flex cursor-pointer flex-col items-center gap-1.5 justify-self-start has-focus-visible:[&>span:first-of-type]:outline-2 has-focus-visible:[&>span:first-of-type]:outline-accent-blue">
+        <div className="grid grid-cols-3 items-center px-8 lg:hidden">
+          <label className="flex cursor-pointer flex-col items-center gap-1.5 has-focus-visible:[&>span:first-of-type]:outline-2 has-focus-visible:[&>span:first-of-type]:outline-branco">
             <PickInput onPick={pick} />
-            <span className="glass-dark pressable grid size-13 place-items-center rounded-2xl">
+            <span className="pressable grid size-13 place-items-center rounded-full bg-cinza-800">
               <Image aria-hidden size={22} />
             </span>
-            <span className="text-subheadline">Galeria</span>
+            <span className="texto-micro font-normal text-cinza-400">Galeria</span>
           </label>
-          <label className="pressable grid size-20 cursor-pointer place-items-center rounded-full border-4 border-label-on-accent has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent-blue">
+          <label className="pressable mx-auto grid size-20 cursor-pointer place-items-center rounded-full border-4 border-branco has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-branco">
             <PickInput onPick={pick} capture label="Tirar foto" />
-            <span className="size-16 rounded-full bg-label-on-accent" />
+            <span className="size-15.5 rounded-full bg-branco" />
           </label>
         </div>
       </div>

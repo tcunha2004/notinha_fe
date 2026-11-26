@@ -6,11 +6,10 @@ const decimal = new Intl.NumberFormat(LOCALE, {
 });
 const time = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit' });
 const shortMonth = new Intl.DateTimeFormat(LOCALE, { month: 'short' });
-const longDay = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
 const month = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
 const monthYear = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
 
-/** R$ 1.248,90 */
+/** R$ 1.248,90 (Intl puts a no-break space after "R$") */
 export const formatCurrency = (value: number) => currency.format(value);
 
 /** 15,90 (no currency symbol, as printed on receipts) */
@@ -47,11 +46,17 @@ export function formatPurchaseDate(iso: string, { withTime = false } = {}, now =
   return withTime ? `${day}, ${hhmm}` : day;
 }
 
-/** "terça, 24 de novembro" */
-export const formatLongDay = (date: Date) => longDay.format(date).replace('-feira', '');
-
 /** "novembro" */
 export const formatMonth = (date: Date) => month.format(date);
 
-/** "novembro 2026" */
-export const formatMonthYear = (date: Date) => monthYear.format(date).replace(' de ', ' ');
+/** "Novembro de 2026" (group headers: capitalized, never all caps) */
+export function formatMonthYear(date: Date) {
+  const text = monthYear.format(date);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** "un", "kg", "L" (others lowercased: "pct") */
+export const formatUnit = (unit: string) => (unit === 'L' ? 'L' : unit.toLowerCase());
+
+/** "−R$ 0,20": a real minus sign, not a hyphen. */
+export const formatDiscount = (value: number) => `−${formatCurrency(value)}`;

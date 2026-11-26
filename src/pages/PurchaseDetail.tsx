@@ -1,59 +1,86 @@
-import { ChevronLeft, ExternalLink, Trash2 } from 'lucide-react';
+import { ChevronLeft, Image, RefreshCw, Trash2 } from 'lucide-react';
 import { Outlet } from 'react-router';
 import { usePurchase } from '../app/loaders';
 import { ItemsSection } from '../components/domain/ItemsSection';
-import { PurchaseLayout, StickyFooter } from '../components/domain/PurchaseLayout';
-import { ReviewBanner } from '../components/domain/ReviewBanner';
+import { PurchaseHero, StickyFooter } from '../components/domain/PurchaseHero';
 import { TotalsCard } from '../components/domain/TotalsCard';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
-import { GlassButton } from '../components/ui/GlassButton';
-import { NavBar } from '../components/ui/NavBar';
+import { IconButton } from '../components/ui/IconButton';
+import { Notice } from '../components/ui/Notice';
+import { TopBar } from '../components/ui/TopBar';
 import { formatCurrency } from '../lib/format';
-import { getTotals, purchaseSubtitle, storeName } from '../lib/purchase';
+import { getTotals, storeName } from '../lib/purchase';
+import type { Purchase } from '../types';
 import { photoUrl } from '../services/purchases';
+
+/** The notice's title says what; its text says what to do. */
+function reviewMessage(purchase: Purchase) {
+  const flagged = purchase.items.filter((item) => item.flagged).length;
+  const { itemsTotal, difference } = getTotals(purchase);
+  const title = flagged
+    ? `Confira ${flagged} ${flagged === 1 ? 'item' : 'itens'}`
+    : 'Confira o total da nota';
+  const text =
+    difference !== 0
+      ? `Os itens somam ${formatCurrency(itemsTotal)}, mas a nota diz ${formatCurrency(purchase.total_amount)}. Compare com a foto ou toque no total para corrigir.`
+      : 'Parte da nota não foi lida direito. Compare os itens marcados com a foto.';
+  return { title, text };
+}
 
 export function PurchaseDetail() {
   const purchase = usePurchase();
   const needsReview = purchase.status === 'needs_review';
+  const photoLink = (
+    <Button
+      variant={needsReview ? 'claro' : 'secundario'}
+      size="medio"
+      href={photoUrl(purchase.id)}
+      className="self-start"
+    >
+      <Image aria-hidden size={18} />
+      Ver foto da nota
+      <span className="sr-only">(abre em nova aba)</span>
+    </Button>
+  );
 
   return (
-    <main className="page-container animate-push">
-      <NavBar
-        title="Compra"
-        leading={<GlassButton to="/purchases" icon={ChevronLeft} label="Voltar" />}
-        trailing={<GlassButton to="delete" icon={Trash2} label="Excluir compra" />}
+    <main className="page-container flex min-h-dvh flex-col pt-[max(12px,env(safe-area-inset-top))] animate-tela">
+      <TopBar
+        leading={<IconButton to="/purchases" icon={ChevronLeft} label="Voltar" />}
+        trailing={<IconButton to="delete" icon={Trash2} label="Excluir compra" />}
       />
 
-      <PurchaseLayout
-        footer={<TotalsCard purchase={purchase} />}
-        aside={<ItemsSection purchase={purchase} />}
-      >
-        <div className="flex flex-col items-center pt-2 text-center">
-          <Avatar name={storeName(purchase)} tone={needsReview ? 'orange' : 'green'} size="lg" />
-          <p className="mt-4 font-rounded text-amount-large">
-            {formatCurrency(purchase.total_amount)}
-          </p>
-          <h2 className="mt-1 max-w-full truncate text-title-2 font-semibold">
-            {storeName(purchase)}
-          </h2>
-          <p className="mt-1 text-subheadline text-label-secondary">{purchaseSubtitle(purchase)}</p>
-        </div>
+      <div className="pt-1">
+        <PurchaseHero
+          purchase={purchase}
+          heading="h1"
+          badge={<Avatar name={storeName(purchase)} size="lg" />}
+        />
+      </div>
 
-        {needsReview && (
-          <ReviewBanner itemsTotal={getTotals(purchase).itemsTotal} total={purchase.total_amount} />
+      <div className="px-5 pt-6">
+        {needsReview ? (
+          <Notice titleId="review-title" title={reviewMessage(purchase).title} action={photoLink}>
+            {reviewMessage(purchase).text}
+          </Notice>
+        ) : (
+          <div className="flex justify-center">{photoLink}</div>
         )}
+      </div>
 
-        <Button variant="tinted" href={photoUrl(purchase.id)}>
-          Ver foto da nota
-          <ExternalLink aria-hidden size={16} />
-          <span className="sr-only">(abre em nova aba)</span>
-        </Button>
-      </PurchaseLayout>
+      <div className="mt-3 flex flex-col gap-2">
+        <ItemsSection purchase={purchase} />
+        <TotalsCard purchase={purchase} />
+      </div>
 
+      <div className="flex-1" />
       {needsReview ? (
         <StickyFooter>
-          <Button to="/scan">Ler a nota de novo</Button>
+          <Button to="/scan">
+            <RefreshCw aria-hidden size={20} />
+            Ler a nota de novo
+          </Button>
         </StickyFooter>
       ) : (
         <div className="h-[max(24px,env(safe-area-inset-bottom))]" />

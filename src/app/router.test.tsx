@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderGoogleButton } from '../lib/gis';
 import { getMe, loginWithGoogle, logout } from '../services/auth';
 import { purchases } from '../mocks/purchases';
@@ -30,6 +30,9 @@ vi.mock('../services/purchases', async (importOriginal) => ({
   uploadInvoice: vi.fn(),
 }));
 
+/** The login screen's headline. */
+const LOGIN = /Fotografe a nota/;
+
 const user = { email: 'ana@example.com', name: 'Ana Souza', picture: '' };
 
 beforeEach(() => {
@@ -51,7 +54,7 @@ describe('routes render without crashing', () => {
     ['/scan', 'Enviar nota'],
     ['/purchases/p1/review', 'Nota lida'],
     ['/purchases', 'Compras'],
-    ['/purchases/p2', 'Compra'],
+    ['/purchases/p2', 'Hortifruti Sol Nascente'],
   ])('%s', async (path, heading) => {
     renderAt(path);
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
@@ -65,7 +68,7 @@ describe('routes render without crashing', () => {
 
   it('shows the review banner for a purchase that needs review', async () => {
     renderAt('/purchases/p2');
-    expect(await screen.findByText('Precisa de revisão')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Confira 1 item' })).toBeInTheDocument();
   });
 
   it('unknown purchase shows not found', async () => {
@@ -80,7 +83,7 @@ describe('authentication', () => {
     async (path) => {
       vi.mocked(getMe).mockResolvedValue(null);
       renderAt(path);
-      expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: LOGIN })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Início' })).not.toBeInTheDocument();
     },
   );
@@ -161,7 +164,7 @@ describe('authentication', () => {
     // jsdom ignores the CSS breakpoints, so both Home's and the Sidebar's buttons exist.
     const [sair] = screen.getAllByRole('button', { name: 'Sair' });
     await userEvent.click(sair as HTMLElement);
-    expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: LOGIN })).toBeInTheDocument();
     expect(logout).toHaveBeenCalledOnce();
   });
 });
@@ -219,14 +222,28 @@ describe('sending a receipt', () => {
     processing();
     const heading = await screen.findByRole('heading', {
       level: 1,
-      name: 'Não conseguimos ler esta nota',
+      name: 'Não deu pra ler a nota',
     });
     expect(heading).toHaveFocus();
     expect(screen.getByRole('alert')).toHaveTextContent('Nada foi salvo');
-    expect(screen.getByText('Para a próxima foto')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tirar outra foto' }));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Enviar nota' }),
+    ).toBeInTheDocument();
+  });
+
+  it('an already saved receipt points to the existing purchase', async () => {
+    vi.mocked(uploadInvoice).mockRejectedValue(new ApiError(409, 'p2'));
+    processing();
+    const heading = await screen.findByRole('heading', {
+      level: 1,
+      name: 'Esta nota já foi salva',
+    });
+    expect(heading).toHaveFocus();
+    expect(screen.getByRole('alert')).toHaveTextContent('Nada foi salvo de novo');
+    await userEvent.click(screen.getByRole('link', { name: 'Ver compra salva' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Hortifruti Sol Nascente' }),
     ).toBeInTheDocument();
   });
 
@@ -235,7 +252,7 @@ describe('sending a receipt', () => {
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce({ id: 'p2', status: 'ok' });
     processing();
-    await screen.findByRole('heading', { level: 1, name: 'Não foi possível enviar agora' });
+    await screen.findByRole('heading', { level: 1, name: 'Não deu pra enviar agora' });
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
     expect(await screen.findByRole('heading', success)).toBeInTheDocument();
     expect(uploadInvoice).toHaveBeenNthCalledWith(2, photo);
@@ -245,7 +262,7 @@ describe('sending a receipt', () => {
     vi.mocked(uploadInvoice).mockRejectedValue(new ApiError(401));
     processing();
     vi.mocked(getMe).mockResolvedValue(null);
-    expect(await screen.findByRole('heading', { level: 1, name: 'Notinha' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: LOGIN })).toBeInTheDocument();
   });
 });
 
@@ -255,8 +272,8 @@ describe('correcting items', () => {
     const name = await screen.findByDisplayValue('Pão francês');
     await userEvent.clear(name);
     await userEvent.type(name, 'Pão de sal');
-    await userEvent.click(screen.getByRole('radio', { name: 'UN' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'un' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p1', 'p1-i8', {
       description: 'Pão de sal',
@@ -271,7 +288,7 @@ describe('correcting items', () => {
   it('a failed save keeps the sheet open with the error', async () => {
     vi.mocked(saveItem).mockRejectedValue(new TypeError('Failed to fetch'));
     renderAt('/purchases/p1/review/items/p1-i8');
-    await userEvent.click(await screen.findByRole('button', { name: 'Salvar' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar item' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar');
     expect(screen.getByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
   });
@@ -281,11 +298,11 @@ describe('correcting items', () => {
     await userEvent.click(await screen.findByRole('link', { name: 'Adicionar item que faltou' }));
     const dialog = await screen.findByRole('dialog', { name: 'Novo item' });
     expect(dialog).not.toHaveTextContent('Como está na nota');
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     expect(saveItem).not.toHaveBeenCalled(); // no name yet
     await userEvent.type(screen.getByLabelText('Descrição'), 'Sacola');
     await userEvent.type(screen.getByLabelText(/Preço unitário/), '0,10');
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p2', undefined, {
       description: 'Sacola',
@@ -304,7 +321,7 @@ describe('correcting the receipt total', () => {
     expect(await screen.findByRole('dialog', { name: 'Total da nota' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Usar a soma' }));
     expect(screen.getByText('Confere com a soma dos itens.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar total' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     const p2 = purchases.find((p) => p.id === 'p2');
     expect(saveTotal).toHaveBeenCalledWith('p2', p2 && p2.total_amount - 2.26);
@@ -313,7 +330,7 @@ describe('correcting the receipt total', () => {
   it('a failed save keeps the sheet open with the error', async () => {
     vi.mocked(saveTotal).mockRejectedValue(new TypeError('Failed to fetch'));
     renderAt('/purchases/p1/review/total');
-    await userEvent.click(await screen.findByRole('button', { name: 'Salvar' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar total' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar');
   });
 });
@@ -356,5 +373,26 @@ describe('deleting', () => {
     renderAt('/purchases/p2/delete');
     await userEvent.click(await screen.findByRole('button', { name: 'Excluir compra' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível excluir');
+  });
+});
+
+describe('theme', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.tema;
+    localStorage.clear();
+  });
+
+  it('starts light; the toggle next to the profile switches to dark and back, and remembers it', async () => {
+    renderAt('/');
+    const toDark = await screen.findByRole('button', { name: 'Usar tema escuro' });
+    expect(document.documentElement.dataset.tema).toBeUndefined();
+
+    await userEvent.click(toDark);
+    expect(document.documentElement.dataset.tema).toBe('escuro');
+    expect(localStorage.getItem('notinha:tema')).toBe('escuro');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Usar tema claro' }));
+    expect(document.documentElement.dataset.tema).toBeUndefined();
+    expect(localStorage.getItem('notinha:tema')).toBeNull();
   });
 });

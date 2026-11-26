@@ -3,25 +3,41 @@ import { Link } from 'react-router';
 import { cn } from '../../lib/cn';
 
 const variants = {
-  filled: 'bg-brand-green text-label-on-accent shadow-brand hover:bg-brand-green-dark',
-  tinted: 'bg-brand-mint text-brand-green-dark hover:bg-brand-mint/70',
-  gray: 'bg-fill-secondary text-label-primary hover:bg-fill-tertiary',
+  /** The screen's action. At most one per screen. */
+  principal: 'bg-marca text-sobre-marca active:bg-marca-pressionada',
+  /** Main action on the green and on the camera. */
+  neutro: 'bg-botao-neutro text-sobre-botao-neutro',
+  /** Supporting actions: see photo, cancel. */
+  secundario: 'bg-superficie text-texto',
+  /** Secondary action on the green. */
+  translucido: 'bg-sobre-marca-suave text-sobre-marca',
+  /** On a colored notice (attention / error). */
+  claro: 'bg-branco text-tinta',
   /** Confirms something that can't be undone. */
-  destructive: 'bg-accent-red text-label-on-accent hover:bg-accent-red/85',
+  perigo: 'bg-erro-700 text-branco',
   /** Offers it: quieter, so it isn't tapped by accident. */
-  destructiveGray: 'bg-fill-secondary text-accent-red hover:bg-fill-tertiary',
+  perigoSecundario: 'bg-superficie text-erro-700',
+};
+
+const sizes = {
+  /** 56px, full width at the bottom of the screen. */
+  grande: 'h-14 w-full px-6 texto-botao',
+  /** 44px, inline with the content. */
+  medio: 'h-11 px-5 text-base leading-5 font-semibold',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
   to?: string;
   /** Link outside the app, opened in a new tab. */
   href?: string;
 }
 
-/** 52px capsule button. Renders a link when `to` (in-app) or `href` (new tab) is set. */
+/** Pill button. Renders a link when `to` (in-app) or `href` (new tab) is set. */
 export function Button({
-  variant = 'filled',
+  variant = 'principal',
+  size = 'grande',
   to,
   href,
   className,
@@ -29,8 +45,9 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = cn(
-    'pressable flex h-13 w-full items-center justify-center gap-2 rounded-full px-6 text-headline transition-colors',
+    'pressable inline-flex shrink-0 items-center justify-center gap-2 rounded-full disabled:opacity-40 aria-disabled:opacity-40',
     variants[variant],
+    sizes[size],
     className,
   );
   if (href) {

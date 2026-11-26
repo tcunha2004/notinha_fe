@@ -1,7 +1,9 @@
+import { LoaderCircle } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useFetcher, useNavigate } from 'react-router';
 import { usePurchase, type totalAction } from '../app/loaders';
-import { SaveError, Sheet, SheetFormHeader } from '../components/ui/Sheet';
+import { Button } from '../components/ui/Button';
+import { SaveError, Sheet, SheetHeader } from '../components/ui/Sheet';
 import { TextField } from '../components/ui/TextField';
 import { formatCurrency, formatDecimal, parseDecimal } from '../lib/format';
 import { getTotals } from '../lib/purchase';
@@ -35,59 +37,63 @@ export function TotalSheet() {
             { method: 'post', encType: 'application/json', preventScrollReset: true },
           );
         }}
-        className="px-4 pt-2 pb-[max(20px,env(safe-area-inset-bottom))] lg:pt-4"
+        className="pt-2 pb-[max(34px,env(safe-area-inset-bottom))] lg:pt-5"
       >
-        <SheetFormHeader
-          titleId={titleId}
-          title="Total da nota"
-          onClose={onClose}
-          saving={saving}
-          disabled={!total.trim()}
-        />
+        <SheetHeader titleId={titleId} title="Total da nota" onClose={onClose} />
 
-        <p className="mt-5 px-1 text-subheadline text-label-secondary">
-          Digite o <strong className="font-semibold">Valor a pagar</strong> impresso no fim da nota.
-        </p>
-
-        <fieldset disabled={saving} className="mt-3 overflow-hidden rounded-field bg-bg-grouped">
-          <TextField
-            label="Valor a pagar"
-            prefix="R$"
-            inputMode="decimal"
-            placeholder="0,00"
-            autoFocus
-            value={total}
-            onChange={(event) => setTotal(event.target.value)}
-            className="text-label-primary"
-          />
-        </fieldset>
-
-        {/* Cut-off totals are the common case, and then the items' sum is usually the answer. */}
-        <div className="mt-5 flex items-center justify-between gap-4 px-1">
-          <span className="text-body text-label-secondary">
-            Soma dos itens <span className="text-label-primary">{formatCurrency(itemsTotal)}</span>
-          </span>
-          {!matches && (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => setTotal(formatDecimal(itemsTotal))}
-              className="pressable rounded-full bg-brand-mint px-3.5 py-1.5 text-footnote font-semibold text-brand-green-dark hover:bg-brand-mint/70"
-            >
-              Usar a soma
-            </button>
-          )}
-        </div>
-
-        {failed ? (
-          <SaveError />
-        ) : (
-          <p aria-live="polite" className="mt-3 px-1 text-footnote text-label-secondary">
-            {total.trim() && matches
-              ? 'Confere com a soma dos itens.'
-              : 'Ao salvar, o Notinha confere de novo se a soma dos itens bate com o total da nota.'}
+        <div className="flex flex-col gap-3.5 px-5 pt-4">
+          <p className="texto-legenda text-texto-secundario">
+            Digite o <strong className="font-semibold text-texto">Valor a pagar</strong> impresso no
+            fim da nota.
           </p>
-        )}
+
+          <fieldset disabled={saving} className="contents">
+            <TextField
+              label="Valor a pagar"
+              prefix="R$"
+              inputMode="decimal"
+              placeholder="0,00"
+              autoFocus
+              value={total}
+              onChange={(event) => setTotal(event.target.value)}
+            />
+          </fieldset>
+
+          {/* Cut-off totals are the common case, and then the items' sum is usually the answer. */}
+          <div className="flex min-h-11 items-center justify-between gap-4">
+            <span className="texto-legenda text-texto-secundario">
+              Soma dos itens{' '}
+              <span className="texto-corpo-forte text-texto tabular-nums">
+                {formatCurrency(itemsTotal)}
+              </span>
+            </span>
+            {!matches && (
+              <Button
+                variant="secundario"
+                size="medio"
+                disabled={saving}
+                onClick={() => setTotal(formatDecimal(itemsTotal))}
+              >
+                Usar a soma
+              </Button>
+            )}
+          </div>
+
+          {failed ? (
+            <SaveError>Não foi possível salvar. Confira sua conexão e tente de novo.</SaveError>
+          ) : (
+            <p aria-live="polite" className="texto-legenda text-texto-secundario">
+              {total.trim() && matches
+                ? 'Confere com a soma dos itens.'
+                : 'Ao salvar, a gente confere de novo se a soma bate com o total da nota.'}
+            </p>
+          )}
+
+          <Button type="submit" aria-disabled={!total.trim() || saving}>
+            {saving && <LoaderCircle aria-hidden size={20} className="animate-spin" />}
+            {saving ? 'Salvando…' : 'Salvar total'}
+          </Button>
+        </div>
       </form>
     </Sheet>
   );

@@ -2,7 +2,6 @@ import { Search } from 'lucide-react';
 import { useLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
 import { PurchaseRow } from '../components/domain/PurchaseRow';
-import { Card, CardList } from '../components/ui/Card';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { formatCurrency, formatMonthYear } from '../lib/format';
 import { groupByMonth } from '../lib/purchase';
@@ -11,34 +10,38 @@ export function Purchases() {
   const groups = groupByMonth(useLoaderData<typeof purchasesLoader>());
 
   return (
-    <main className="page-container pt-[max(16px,env(safe-area-inset-top))]">
-      <h1 className="pt-11 text-large-title lg:pt-6">Compras</h1>
+    <main className="page-container pt-[max(12px,env(safe-area-inset-top))] animate-surgir">
+      <div className="flex flex-col gap-4 px-5 pt-4">
+        <h1 className="texto-titulo-1">Compras</h1>
 
-      {/* Visual only for now: filtering arrives with the API. */}
-      <label className="mt-3 flex h-11 items-center gap-2 rounded-full bg-fill-secondary px-4 text-label-secondary has-focus-visible:outline-2 has-focus-visible:outline-accent-blue">
-        <Search aria-hidden size={18} strokeWidth={2.25} />
-        <span className="sr-only">Buscar</span>
-        <input
-          type="search"
-          placeholder="Buscar loja ou item"
-          className="min-w-0 flex-1 bg-transparent text-body text-label-primary outline-none placeholder:text-label-secondary"
-        />
-      </label>
+        {/* Visual only for now: filtering arrives with the API. */}
+        <label className="flex h-12 items-center gap-2.5 rounded-full bg-superficie px-4 text-texto-secundario has-focus-visible:shadow-[inset_0_0_0_2px_var(--color-texto)]">
+          <Search aria-hidden size={20} strokeWidth={2} />
+          <span className="sr-only">Buscar</span>
+          <input
+            type="search"
+            placeholder="Buscar loja ou item"
+            className="min-w-0 flex-1 bg-transparent texto-corpo text-texto outline-none placeholder:text-texto-secundario"
+          />
+        </label>
+      </div>
 
-      {groups.map((group) => (
-        <section key={group.key} aria-labelledby={`month-${group.key}`} className="mt-6">
+      {groups.map((group, index) => (
+        <section
+          key={group.key}
+          aria-labelledby={`month-${group.key}`}
+          className={index === 0 ? 'mt-5' : 'mt-2'}
+        >
           <SectionHeader
             id={`month-${group.key}`}
             title={formatMonthYear(group.date)}
-            trailing={<span>{formatCurrency(group.total)}</span>}
+            trailing={formatCurrency(group.total)}
           />
-          <Card>
-            <CardList>
-              {group.purchases.map((purchase) => (
-                <PurchaseRow key={purchase.id} purchase={purchase} />
-              ))}
-            </CardList>
-          </Card>
+          <ul>
+            {group.purchases.map((purchase) => (
+              <PurchaseRow key={purchase.id} purchase={purchase} />
+            ))}
+          </ul>
         </section>
       ))}
     </main>

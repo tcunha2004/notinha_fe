@@ -2,74 +2,79 @@ import { Check, Trash2, TriangleAlert, X } from 'lucide-react';
 import { Outlet } from 'react-router';
 import { usePurchase } from '../app/loaders';
 import { ItemsSection } from '../components/domain/ItemsSection';
-import { PurchaseLayout, StickyFooter } from '../components/domain/PurchaseLayout';
+import { PurchaseHero, StickyFooter } from '../components/domain/PurchaseHero';
 import { TotalsCard } from '../components/domain/TotalsCard';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { InfoList } from '../components/ui/Card';
-import { GlassButton } from '../components/ui/GlassButton';
-import { NavBar } from '../components/ui/NavBar';
+import { IconButton } from '../components/ui/IconButton';
+import { KeyValueList } from '../components/ui/KeyValueList';
 import { SectionHeader } from '../components/ui/SectionHeader';
-import { formatCurrency } from '../lib/format';
-import { getTotals, purchaseSubtitle, storeName } from '../lib/purchase';
+import { TopBar } from '../components/ui/TopBar';
+import { cn } from '../lib/cn';
+import { getTotals } from '../lib/purchase';
 
 const NOT_READ = 'Não lido';
 
-/** First screen after the upload: what was read, and whether it adds up. */
+/** First screen after the upload: what was read, and whether it adds up.
+ *  When it adds up it's a key moment, so the green takes the top of the screen. */
 export function Review() {
   const purchase = usePurchase();
   const ok = purchase.status === 'ok';
   const sumMatches = getTotals(purchase).difference === 0;
+  const tone = ok ? 'marca' : 'fundo';
 
   return (
-    <main className="page-container animate-push">
-      <NavBar
-        title="Nota lida"
-        leading={<GlassButton to="/" icon={X} label="Fechar" />}
-        trailing={<GlassButton to="delete" icon={Trash2} label="Excluir compra" />}
-      />
-
-      <PurchaseLayout
-        footer={<TotalsCard purchase={purchase} />}
-        aside={<ItemsSection purchase={purchase} />}
-      >
-        <div className="flex flex-col items-center pt-2 text-center">
-          {ok ? (
-            <span className="grid size-17 place-items-center rounded-full bg-brand-gradient text-label-on-accent shadow-brand animate-dialog-in">
-              <Check aria-hidden size={34} strokeWidth={3} />
-            </span>
-          ) : (
-            <span className="grid size-17 place-items-center rounded-full bg-accent-orange-soft text-accent-orange animate-dialog-in">
-              <TriangleAlert aria-hidden size={32} />
-            </span>
-          )}
-          <p className="mt-5 font-rounded text-amount-large">
-            {formatCurrency(purchase.total_amount)}
-          </p>
-          <h2 className="mt-1 max-w-full truncate text-title-2 font-semibold">
-            {storeName(purchase)}
-          </h2>
-          <p className="mt-1 text-subheadline text-label-secondary">{purchaseSubtitle(purchase)}</p>
-          {/* role=status: announced when an edit flips the check. */}
-          <p role="status" className="mt-4">
-            {ok ? (
-              <Badge tone="success">
-                <Check aria-hidden size={14} strokeWidth={3} />A soma dos itens confere com o total
-              </Badge>
-            ) : (
-              <Badge tone="warning" className="px-3.5 py-1.5 text-footnote">
-                <TriangleAlert aria-hidden size={14} />
-                {sumMatches
-                  ? 'Confira os itens marcados'
-                  : 'A soma dos itens não confere com o total'}
-              </Badge>
-            )}
-          </p>
+    <main
+      className={cn(
+        'flex min-h-dvh flex-col pt-[max(12px,env(safe-area-inset-top))] animate-surgir',
+        ok && 'bg-marca text-sobre-marca',
+      )}
+    >
+      <h1 className="sr-only">Nota lida</h1>
+      <div className="page-container">
+        <TopBar
+          leading={<IconButton to="/" icon={X} label="Fechar" tone={tone} />}
+          trailing={<IconButton to="delete" icon={Trash2} label="Excluir compra" tone={tone} />}
+        />
+        <div className="pb-7">
+          <PurchaseHero
+            purchase={purchase}
+            onBrand={ok}
+            badge={
+              ok ? (
+                <span className="grid size-14 place-items-center rounded-full bg-tinta text-marca animate-mola">
+                  <Check aria-hidden size={30} strokeWidth={3} />
+                </span>
+              ) : (
+                <span className="grid size-14 place-items-center rounded-full bg-atencao-50 text-atencao-700 animate-mola">
+                  <TriangleAlert aria-hidden size={28} />
+                </span>
+              )
+            }
+          />
         </div>
+      </div>
 
-        <section aria-labelledby="store-title">
+      <div className="page-container flex flex-1 flex-col rounded-t-xl bg-fundo pt-5 text-texto">
+        {/* role=status: announced when an edit flips the check. */}
+        <p role="status" className="px-5">
+          {ok ? (
+            <Badge tone="confirmacao">
+              <Check aria-hidden size={16} strokeWidth={2.5} />A soma dos itens confere com o total
+            </Badge>
+          ) : (
+            <Badge tone="alerta">
+              <TriangleAlert aria-hidden size={16} />
+              {sumMatches
+                ? 'Confira os itens marcados'
+                : 'A soma dos itens não confere com o total'}
+            </Badge>
+          )}
+        </p>
+
+        <section aria-labelledby="store-title" className="mt-4">
           <SectionHeader id="store-title" title="Loja" />
-          <InfoList
+          <KeyValueList
             rows={[
               { label: 'CNPJ', value: purchase.store?.cnpj ?? NOT_READ },
               { label: 'Endereço', value: purchase.store?.address ?? NOT_READ },
@@ -77,11 +82,17 @@ export function Review() {
             ]}
           />
         </section>
-      </PurchaseLayout>
 
-      <StickyFooter>
-        <Button to="/">Concluir</Button>
-      </StickyFooter>
+        <div className="mt-2 flex flex-col gap-2">
+          <ItemsSection purchase={purchase} />
+          <TotalsCard purchase={purchase} />
+        </div>
+
+        <div className="flex-1" />
+        <StickyFooter>
+          <Button to="/">Concluir</Button>
+        </StickyFooter>
+      </div>
 
       <Outlet />
     </main>

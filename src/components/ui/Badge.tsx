@@ -2,11 +2,15 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
 const tones = {
-  warning: 'bg-accent-orange-soft text-accent-orange px-2 py-0.5 text-caption-1 font-semibold',
-  success: 'bg-brand-mint text-brand-green-dark px-3.5 py-1.5 text-footnote font-semibold',
-  onAccent: 'bg-on-accent-fill text-label-on-accent px-4 py-1.5 text-subheadline font-semibold',
+  /** 24px state chip ("Revisar"). */
+  atencao: 'h-6 px-2.5 texto-micro bg-atencao-50 text-atencao-700',
+  /** 32px, shown after the reading ("A soma dos itens confere com o total"). */
+  confirmacao: 'h-8 px-3.5 text-sm leading-[18px] font-semibold bg-verde-50 text-verde-700',
+  /** 32px, the reading needs a look. */
+  alerta: 'h-8 px-3.5 text-sm leading-[18px] font-semibold bg-atencao-50 text-atencao-700',
 };
 
+/** Short state, always with text (never color alone). */
 export function Badge({
   tone,
   children,
