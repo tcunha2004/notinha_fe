@@ -10,15 +10,20 @@ import { uploadInvoice, ApiError } from '../services/purchases';
 const SLOW_MS = 10_000;
 
 /** 'unreadable' = the API said nothing on the photo is legible (422): a new photo is needed.
+ *  'invalid' = it's not a supermarket/pharmacy receipt (422, reason 'invalid'): send another receipt.
  *  'failed' = network or server error: the photo is fine, so we offer to resend the same one.
  *  'duplicate' = this receipt was already saved (409): we point to the existing purchase. */
-type Phase = 'reading' | 'unreadable' | 'failed' | 'duplicate';
+type Phase = 'reading' | 'unreadable' | 'invalid' | 'failed' | 'duplicate';
 
 /** Short title + one sentence + one action (Voz board, "Vazio e erro"). */
 const problems = {
   unreadable: {
     title: 'Não deu pra ler a nota',
     text: 'Tente com mais luz e com a nota inteira dentro do quadro. Nada foi salvo.',
+  },
+  invalid: {
+    title: 'Essa nota não é de mercado',
+    text: 'Por enquanto, o Notinha só lê notas de supermercado e farmácia',
   },
   duplicate: {
     title: 'Esta nota já foi salva',
@@ -90,7 +95,9 @@ export function Processing() {
         else if (code === 409) {
           setExistingId((error as ApiError).purchaseId);
           setPhase('duplicate');
-        } else setPhase(code === 422 ? 'unreadable' : 'failed');
+        } else if (code === 422) {
+          setPhase((error as ApiError).reason === 'invalid' ? 'invalid' : 'unreadable');
+        } else setPhase('failed');
       }
     },
     [navigate],
@@ -174,6 +181,8 @@ export function Processing() {
         <div className="flex flex-col gap-3">
           {phase === 'unreadable' ? (
             <Button onClick={newPhoto}>Tirar outra foto</Button>
+          ) : phase === 'invalid' ? (
+            <Button onClick={newPhoto}>Enviar outra nota</Button>
           ) : phase === 'duplicate' ? (
             <Button to={`/purchases/${existingId}`}>Ver compra salva</Button>
           ) : (

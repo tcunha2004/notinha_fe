@@ -69,7 +69,7 @@ export function Home() {
         <section className="flex flex-col items-start gap-2 px-5 pt-16">
           <h2 className="texto-titulo-2">Nenhuma nota ainda</h2>
           <p className="texto-corpo text-texto-secundario">
-            Fotografe a primeira e a gente organiza suas compras.
+            Fotografe a primeira nota do mercado ou farmácia e a gente organiza suas compras.
           </p>
           <Button to="/scan" size="medio" className="mt-4">
             Enviar nota

@@ -25,6 +25,13 @@ describe('uploadInvoice', () => {
     });
   });
 
+  it('422 carries the reason, so "not a grocery receipt" differs from "unreadable"', async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ detail: { reason: 'invalid' } }, { status: 422 }),
+    );
+    await expect(uploadInvoice(photo)).rejects.toMatchObject({ status: 422, reason: 'invalid' });
+  });
+
   it('409 throws ApiError with the already saved purchase id', async () => {
     fetchMock.mockResolvedValueOnce(
       Response.json({ detail: { purchase_id: 'p9' } }, { status: 409 }),
