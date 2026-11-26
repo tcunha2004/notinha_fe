@@ -1,9 +1,13 @@
 import type { ItemInput, Purchase, PurchaseStatus } from '../types';
 import { request } from './api';
 
-/** The API answered with an error. `status` tells the screens what to show (401 = logged out, 422 on upload = unreadable photo). */
+/** The API answered with an error. `status` tells the screens what to show
+ *  (401 = logged out, 422 on upload = unreadable photo, 409 on upload = already saved, see `purchaseId`). */
 export class ApiError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly purchaseId?: string,
+  ) {
     super(`API error ${status}`);
   }
 }
@@ -70,5 +74,11 @@ export const photoUrl = (purchaseId: string) =>
 export async function uploadInvoice(file: File): Promise<{ id: string; status: PurchaseStatus }> {
   const body = new FormData();
   body.append('image', file);
-  return json(await request('/invoice/upload_invoice', { method: 'POST', body }));
+  const response = await request('/invoice/upload_invoice', { method: 'POST', body });
+  // 409 = same store, date and time already saved: the body points to that purchase.
+  if (response.status === 409) {
+    const { detail } = (await response.json()) as { detail: { purchase_id: string } };
+    throw new ApiError(409, detail.purchase_id);
+  }
+  return json(response);
 }
