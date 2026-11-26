@@ -1,5 +1,14 @@
 // Test fixtures shaped like the API's GET /purchases answer (newest first).
-import type { Purchase, PurchaseItem, PurchaseStatus, Store, Unit } from '../types';
+import type { Product, Purchase, PurchaseItem, PurchaseStatus, Store, Unit } from '../types';
+
+/** A product as the API returns it, identified by name only. */
+const product = (name: string): Product => ({
+  id: `prod-${name}`,
+  name,
+  brand: null,
+  package_size: null,
+  package_unit: null,
+});
 
 const stores = {
   bomDia: {
@@ -31,7 +40,7 @@ const stores = {
 
 type ItemSeed = [
   raw: string,
-  description: string,
+  name: string,
   quantity: number,
   unit: Unit,
   unitPrice: number,
@@ -40,12 +49,12 @@ type ItemSeed = [
 ];
 
 function items(purchaseId: string, seeds: ItemSeed[]): PurchaseItem[] {
-  return seeds.map(([raw, description, quantity, unit, unit_price, total_amount, extra], i) => ({
+  return seeds.map(([raw, name, quantity, unit, unit_price, total_amount, extra], i) => ({
     id: `${purchaseId}-i${i + 1}`,
     purchase_id: purchaseId,
     position: i + 1,
     raw_description: raw,
-    description,
+    product: product(name),
     code: unit === 'KG' ? null : `78910000${String(i + 1).padStart(5, '0')}`,
     quantity,
     unit,
@@ -57,7 +66,7 @@ function items(purchaseId: string, seeds: ItemSeed[]): PurchaseItem[] {
   }));
 }
 
-const CATALOG: [raw: string, description: string][] = [
+const CATALOG: [raw: string, name: string][] = [
   ['ACUCAR REFINADO 1KG', 'Açúcar refinado 1kg'],
   ['OLEO SOJA 900ML', 'Óleo de soja 900ml'],
   ['MACARRAO ESPAGUETE 500G', 'Macarrão espaguete 500g'],
@@ -91,13 +100,13 @@ function generatedItems(purchaseId: string, count: number, total: number): Purch
     const cents = i === count - 1 ? remaining : Math.floor((totalCents * weight) / weightSum);
     remaining -= cents;
     const quantity = cents % 2 === 0 && cents > 600 ? 2 : 1;
-    const [raw, description] = CATALOG[(i * 3 + count) % CATALOG.length] ?? ['ITEM', 'Item'];
+    const [raw, name] = CATALOG[(i * 3 + count) % CATALOG.length] ?? ['ITEM', 'Item'];
     return {
       id: `${purchaseId}-i${i + 1}`,
       purchase_id: purchaseId,
       position: i + 1,
       raw_description: raw,
-      description,
+      product: product(name),
       code: `78920000${String(i + 1).padStart(5, '0')}`,
       quantity,
       unit: 'UN',

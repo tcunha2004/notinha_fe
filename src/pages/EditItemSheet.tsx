@@ -39,14 +39,14 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const failed = fetcher.state === 'idle' && fetcher.data && 'error' in fetcher.data;
 
-  const [description, setDescription] = useState(item ? itemLabel(item) : '');
+  const [name, setName] = useState(item ? itemLabel(item) : '');
   const [quantity, setQuantity] = useState(item ? formatQuantity(item.quantity, item.unit) : '1');
   const [unit, setUnit] = useState(item?.unit ?? 'UN');
   const [unitPrice, setUnitPrice] = useState(item ? formatDecimal(item.unit_price) : '');
   const [discount, setDiscount] = useState(formatDecimal(item?.discount ?? 0));
   const gross = parseDecimal(quantity) * parseDecimal(unitPrice) - parseDecimal(discount);
   const total = Math.max(0, Math.round(gross * 100) / 100);
-  const missing = !description.trim()
+  const missing = !name.trim()
     ? 'Dê um nome ao item'
     : parseDecimal(quantity) <= 0
       ? 'Informe a quantidade'
@@ -60,7 +60,7 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
           if (missing || saving) return;
           void fetcher.submit(
             {
-              description: description.trim(),
+              name: name.trim(),
               quantity: parseDecimal(quantity),
               unit,
               unit_price: parseDecimal(unitPrice),
@@ -94,10 +94,10 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
           <fieldset disabled={saving} className="contents">
             <TextField
               label="Descrição"
-              value={description}
+              value={name}
               placeholder="Ex.: Pão francês"
               autoFocus={!item}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) => setName(event.target.value)}
             />
             <div className="grid grid-cols-2 gap-3">
               <TextField

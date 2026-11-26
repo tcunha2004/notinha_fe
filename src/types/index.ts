@@ -10,14 +10,24 @@ export interface Store {
   logo?: string | null;
 }
 
+/** Standardized product, the same across stores ("CAFE PILAO 2KG" → Café, Pilão, 2000 g). */
+export interface Product {
+  id: string;
+  name: string;
+  brand: string | null;
+  /** In package_unit; null for items sold by weight/volume. */
+  package_size: number | null;
+  package_unit: 'g' | 'ml' | 'un' | null;
+}
+
 export interface PurchaseItem {
   id: string;
   purchase_id: string;
   position: number;
   /** As printed on the receipt; null for items the user added by hand. */
   raw_description: string | null;
-  /** The user's friendly name ("Pão francês"), set when they edit the item. */
-  description: string | null;
+  /** Its name is the item's name. null when the product couldn't be identified. */
+  product: Product | null;
   code: string | null;
   quantity: number;
   /** Usually UN, KG or L, but the receipt may print others (PCT, CX…). */
@@ -31,7 +41,8 @@ export interface PurchaseItem {
 
 /** What the edit sheet sends; the API recomputes the line total. */
 export interface ItemInput {
-  description: string;
+  /** The product name: the API links the item to the product with this name. */
+  name: string;
   quantity: number;
   unit: string;
   unit_price: number;

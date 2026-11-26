@@ -276,7 +276,7 @@ describe('correcting items', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p1', 'p1-i8', {
-      description: 'Pão de sal',
+      name: 'Pão de sal',
       quantity: 0.412,
       unit: 'UN',
       unit_price: 15.9,
@@ -305,7 +305,7 @@ describe('correcting items', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p2', undefined, {
-      description: 'Sacola',
+      name: 'Sacola',
       quantity: 1,
       unit: 'UN',
       unit_price: 0.1,

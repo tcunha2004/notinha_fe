@@ -55,8 +55,8 @@ export function getInitials(name: string) {
     .join('');
 }
 
-/** Friendly name for the edit form: the user's own, else what the receipt says. */
-export const itemLabel = (item: PurchaseItem) => item.description ?? item.raw_description ?? '';
+/** Friendly name for the edit form: the product's, else what the receipt says. */
+export const itemLabel = (item: PurchaseItem) => item.product?.name ?? item.raw_description ?? '';
 
 /** "PAO FRANCES KG" → "Pao frances kg": receipts shout; lists shouldn't. */
 export function sentenceCase(text: string) {
@@ -65,7 +65,7 @@ export function sentenceCase(text: string) {
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
-/** List title: the user's name for it, else the receipt's text made readable.
+/** List title: the product's name, else the receipt's text made readable.
  *  The original text stays visible in the edit sheet. */
 export const itemTitle = (item: PurchaseItem) => sentenceCase(itemLabel(item));
 
