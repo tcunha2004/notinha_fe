@@ -1,43 +1,52 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import { TriangleAlert } from 'lucide-react';
+import { useId, type InputHTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
 interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   /** Static text before the value, e.g. "R$". */
   prefix?: string;
-  /** Replaces the input (e.g. a segmented control) while keeping the row layout. */
-  control?: ReactNode;
+  /** Shown under the field, with the error ring. */
+  error?: string;
 }
 
-/** Inline form row: label on the left, right-aligned value. */
-export function TextField({ label, prefix, control, className, ...props }: TextFieldProps) {
-  const row = 'flex min-h-12 items-center gap-3 px-4 py-2 text-body';
-  if (control) {
-    return (
-      <div className={row}>
-        <span className="flex-1">{label}</span>
-        {control}
-      </div>
-    );
-  }
+/** Label always visible on top. Gray field, no border; focus draws a 2px ink ring. */
+export function TextField({ label, prefix, error, className, id, ...props }: TextFieldProps) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const errorId = `${inputId}-erro`;
   return (
-    <label
-      className={cn(
-        row,
-        'cursor-text has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-accent-blue',
-      )}
-    >
-      <span className="shrink-0">{label}</span>
-      <span className="flex min-w-0 flex-1 items-center justify-end gap-1 text-label-secondary">
-        {prefix && <span aria-hidden>{prefix}</span>}
+    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+      <label htmlFor={inputId} className="texto-rotulo text-texto-secundario">
+        {label}
+      </label>
+      <div
+        className={cn(
+          'flex h-13 items-center gap-1.5 rounded-md bg-superficie px-4 text-[17px] leading-[22px]',
+          error
+            ? 'shadow-[inset_0_0_0_2px_var(--color-erro-700)]'
+            : 'has-focus-visible:shadow-[inset_0_0_0_2px_var(--color-texto)]',
+        )}
+      >
+        {prefix && (
+          <span aria-hidden className="text-texto-secundario">
+            {prefix}
+          </span>
+        )}
         <input
-          className={cn(
-            'max-w-full min-w-0 field-sizing-content bg-transparent text-right outline-none placeholder:text-label-tertiary',
-            className,
-          )}
+          id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          className="w-full min-w-0 flex-1 bg-transparent tabular-nums outline-none placeholder:text-texto-secundario"
           {...props}
         />
-      </span>
-    </label>
+      </div>
+      {error && (
+        <span id={errorId} className="flex items-center gap-1.5 texto-legenda text-erro-700">
+          <TriangleAlert aria-hidden size={16} className="shrink-0" />
+          {error}
+        </span>
+      )}
+    </div>
   );
 }

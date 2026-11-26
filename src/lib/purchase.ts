@@ -58,8 +58,16 @@ export function getInitials(name: string) {
 /** Friendly name for the edit form: the user's own, else what the receipt says. */
 export const itemLabel = (item: PurchaseItem) => item.description ?? item.raw_description ?? '';
 
-/** List title: the receipt's text (as in the design), or the name of a hand-added item. */
-export const itemTitle = (item: PurchaseItem) => item.raw_description ?? item.description ?? '';
+/** "PAO FRANCES KG" → "Pao frances kg": receipts shout; lists shouldn't. */
+export function sentenceCase(text: string) {
+  if (text !== text.toUpperCase()) return text; // already has lowercase: the user typed it
+  const lower = text.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+/** List title: the user's name for it, else the receipt's text made readable.
+ *  The original text stays visible in the edit sheet. */
+export const itemTitle = (item: PurchaseItem) => sentenceCase(itemLabel(item));
 
 /** The CNPJ may be unreadable, and then there's no store at all. */
 export const storeName = (purchase: Purchase) => purchase.store?.name ?? 'Loja não identificada';

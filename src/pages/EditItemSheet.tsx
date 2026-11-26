@@ -4,9 +4,15 @@ import { Navigate, useFetcher, useNavigate, useParams } from 'react-router';
 import { usePurchase, type itemAction } from '../app/loaders';
 import { Button } from '../components/ui/Button';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
-import { SaveError, Sheet, SheetFormHeader } from '../components/ui/Sheet';
+import { SaveError, Sheet, SheetHeader } from '../components/ui/Sheet';
 import { TextField } from '../components/ui/TextField';
-import { formatCurrency, formatDecimal, formatQuantity, parseDecimal } from '../lib/format';
+import {
+  formatCurrency,
+  formatDecimal,
+  formatQuantity,
+  formatUnit,
+  parseDecimal,
+} from '../lib/format';
 import { itemLabel } from '../lib/purchase';
 import type { PurchaseItem, Unit } from '../types';
 
@@ -63,96 +69,100 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
             { method: 'post', encType: 'application/json', preventScrollReset: true },
           );
         }}
-        className="px-4 pt-2 pb-[max(20px,env(safe-area-inset-bottom))] lg:pt-4"
+        className="pt-2 pb-[max(34px,env(safe-area-inset-bottom))] lg:pt-5"
       >
-        <SheetFormHeader
+        <SheetHeader
           titleId={titleId}
           title={item ? 'Editar item' : 'Novo item'}
           onClose={onClose}
-          saving={saving}
-          disabled={Boolean(missing)}
         />
 
-        {item?.raw_description && (
-          <>
-            <h3 className="mt-5 px-1 pb-2 text-footnote text-label-secondary uppercase">
-              Como está na nota
-            </h3>
-            <p className="flex flex-wrap gap-x-4 gap-y-1 rounded-field bg-fill-tertiary px-4 py-3 text-subheadline text-label-secondary">
-              <span>{item.raw_description}</span>
-              <span>
-                {formatQuantity(item.quantity, item.unit)} {item.unit} ×{' '}
-                {formatDecimal(item.unit_price)}
-              </span>
-              <span>{formatDecimal(item.total_amount)}</span>
+        <div className="flex flex-col gap-3.5 px-5 pt-4">
+          {item?.raw_description && (
+            <div className="flex flex-col gap-1.5">
+              <h3 className="texto-rotulo text-texto-secundario">Como está na nota</h3>
+              <p className="flex flex-wrap justify-between gap-x-2 gap-y-1 rounded-sm bg-superficie px-3.5 py-3 font-mono text-[13px] leading-[18px]">
+                <span>{item.raw_description}</span>
+                <span>
+                  {formatQuantity(item.quantity, item.unit)} × {formatDecimal(item.unit_price)} ={' '}
+                  {formatDecimal(item.total_amount)}
+                </span>
+              </p>
+            </div>
+          )}
+
+          <fieldset disabled={saving} className="contents">
+            <TextField
+              label="Descrição"
+              value={description}
+              placeholder="Ex.: Pão francês"
+              autoFocus={!item}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <TextField
+                label="Quantidade"
+                inputMode="decimal"
+                value={quantity}
+                onChange={(event) => setQuantity(event.target.value)}
+              />
+              <SegmentedControl
+                label="Unidade"
+                options={UNITS}
+                value={unit}
+                onChange={setUnit}
+                format={formatUnit}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <TextField
+                label="Preço unitário"
+                prefix="R$"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={unitPrice}
+                onChange={(event) => setUnitPrice(event.target.value)}
+              />
+              <TextField
+                label="Desconto"
+                prefix="R$"
+                inputMode="decimal"
+                value={discount}
+                onChange={(event) => setDiscount(event.target.value)}
+              />
+            </div>
+          </fieldset>
+
+          <div className="flex items-center justify-between gap-4 pt-1">
+            <span className="texto-corpo-forte">Total do item</span>
+            <output
+              aria-live="polite"
+              className="text-[28px] leading-8 font-bold tracking-[-0.03em] tabular-nums [font-stretch:112%]"
+            >
+              {formatCurrency(total)}
+            </output>
+          </div>
+
+          {failed ? (
+            <SaveError>Não foi possível salvar. Confira sua conexão e tente de novo.</SaveError>
+          ) : (
+            <p aria-live="polite" className="texto-legenda text-texto-secundario">
+              {missing ?? 'Ao salvar, a gente confere de novo se a soma bate com o total da nota.'}
             </p>
-          </>
-        )}
+          )}
 
-        <fieldset
-          disabled={saving}
-          className="mt-5 divide-y-[0.5px] divide-separator overflow-hidden rounded-field bg-bg-grouped"
-        >
-          <TextField
-            label="Descrição"
-            value={description}
-            placeholder="Ex.: Pão francês"
-            autoFocus={!item}
-            onChange={(event) => setDescription(event.target.value)}
-            className="text-label-primary"
-          />
-          <TextField
-            label="Quantidade"
-            inputMode="decimal"
-            value={quantity}
-            onChange={(event) => setQuantity(event.target.value)}
-          />
-          <TextField
-            label="Unidade"
-            control={
-              <SegmentedControl label="Unidade" options={UNITS} value={unit} onChange={setUnit} />
-            }
-          />
-          <TextField
-            label="Preço unitário"
-            prefix="R$"
-            inputMode="decimal"
-            placeholder="0,00"
-            value={unitPrice}
-            onChange={(event) => setUnitPrice(event.target.value)}
-          />
-          <TextField
-            label="Desconto"
-            prefix="R$"
-            inputMode="decimal"
-            value={discount}
-            onChange={(event) => setDiscount(event.target.value)}
-          />
-        </fieldset>
+          <Button type="submit" aria-disabled={Boolean(missing) || saving}>
+            {saving && !removing && <LoaderCircle aria-hidden size={20} className="animate-spin" />}
+            {saving && !removing ? 'Salvando…' : 'Salvar item'}
+          </Button>
 
-        <div className="mt-5 flex items-center justify-between gap-4 px-1">
-          <span className="text-headline">Total do item</span>
-          <output aria-live="polite" className="text-title-2 text-brand-green-dark">
-            {formatCurrency(total)}
-          </output>
-        </div>
-
-        {failed ? (
-          <SaveError />
-        ) : (
-          <p aria-live="polite" className="mt-3 px-1 text-footnote text-label-secondary">
-            {missing ??
-              'Ao salvar, o Notinha confere de novo se a soma dos itens bate com o total da nota.'}
-          </p>
-        )}
-
-        {item && (
-          <div className="mt-6 border-t-[0.5px] border-separator pt-5">
-            {confirmingRemove ? (
+          {item &&
+            (confirmingRemove ? (
               <div role="group" aria-label="Confirmar remoção" className="flex gap-3">
                 {/* Focus the safe choice: the button that had focus just disappeared. */}
                 <Button
-                  variant="gray"
+                  variant="secundario"
+                  className="flex-1"
                   autoFocus
                   disabled={saving}
                   onClick={() => setConfirmingRemove(false)}
@@ -160,7 +170,8 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
                   Cancelar
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="perigo"
+                  className="flex-1"
                   disabled={saving}
                   onClick={() =>
                     void fetcher.submit(null, { method: 'delete', preventScrollReset: true })
@@ -172,15 +183,14 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
               </div>
             ) : (
               <Button
-                variant="destructiveGray"
+                variant="perigoSecundario"
                 disabled={saving}
                 onClick={() => setConfirmingRemove(true)}
               >
                 Remover item
               </Button>
-            )}
-          </div>
-        )}
+            ))}
+        </div>
       </form>
     </Sheet>
   );

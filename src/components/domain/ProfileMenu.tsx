@@ -22,7 +22,7 @@ function UserPhoto({
     return (
       <span
         aria-hidden
-        className={cn(base, 'grid place-items-center bg-brand-mint font-semibold text-brand-green')}
+        className={cn(base, 'grid place-items-center bg-superficie font-bold [font-stretch:112%]')}
       >
         {getInitials(name)}
       </span>
@@ -86,24 +86,24 @@ export function ProfileMenu() {
           else setOpen(!open);
           lastPointer.current = '';
         }}
-        className="pressable glass grid size-11 place-items-center rounded-full p-0.5"
+        className="pressable grid size-11 place-items-center rounded-full"
       >
-        <UserPhoto name={user.name} picture={user.picture} className="size-10 text-callout" />
+        <UserPhoto name={user.name} picture={user.picture} className="size-11 text-base" />
       </button>
 
       {open && (
         // pt-2 instead of a margin: no gap, so the pointer can travel to the panel without closing it.
-        <div id={panelId} className="absolute top-full right-0 z-30 pt-2 animate-dialog-in">
-          <div className="glass w-72 rounded-card p-4">
+        <div id={panelId} className="absolute top-full right-0 z-30 pt-2 animate-surgir">
+          <div className="w-72 rounded-lg border border-linha bg-superficie-elevada p-4">
             <div className="flex items-center gap-3">
-              <UserPhoto name={user.name} picture={user.picture} className="size-14 text-title-3" />
+              <UserPhoto name={user.name} picture={user.picture} className="size-14 text-[20px]" />
               <div className="min-w-0">
-                <p className="truncate text-headline">{user.name}</p>
-                <p className="truncate text-subheadline text-label-secondary">{user.email}</p>
+                <p className="truncate texto-corpo-forte">{user.name}</p>
+                <p className="truncate texto-legenda text-texto-secundario">{user.email}</p>
               </div>
             </div>
             <Form method="post" action="/logout" className="mt-4">
-              <Button type="submit" variant="gray">
+              <Button type="submit" variant="secundario" className="w-full">
                 <LogOut aria-hidden size={20} />
                 Sair
               </Button>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { purchases } from '../mocks/purchases';
-import { formatPurchaseDate, formatQuantity } from './format';
-import { getInitials, getTotals, groupByMonth } from './purchase';
+import { formatMonthYear, formatPurchaseDate, formatQuantity, formatUnit } from './format';
+import { getInitials, getTotals, groupByMonth, sentenceCase } from './purchase';
 
 describe('purchase math', () => {
   it('items of every "ok" purchase add up to its total', async () => {
@@ -44,5 +44,12 @@ describe('formatting', () => {
     expect(formatQuantity(0.412, 'KG')).toBe('0,412');
     expect(formatQuantity(6, 'UN')).toBe('6');
     expect(getInitials('Hortifruti Sol Nascente')).toBe('HS');
+  });
+
+  it('follows the design voice: month headers, units and receipt names', () => {
+    expect(formatMonthYear(new Date('2026-11-01T00:00:00'))).toBe('Novembro de 2026');
+    expect([formatUnit('UN'), formatUnit('KG'), formatUnit('L')]).toEqual(['un', 'kg', 'L']);
+    expect(sentenceCase('ARROZ T1 5KG')).toBe('Arroz t1 5kg');
+    expect(sentenceCase('Pão francês')).toBe('Pão francês');
   });
 });
