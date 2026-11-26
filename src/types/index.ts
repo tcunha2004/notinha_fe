@@ -6,6 +6,8 @@ export interface Store {
   cnpj: string;
   name: string | null;
   address: string | null;
+  /** Logo URL found on the web; null when none was found. */
+  logo?: string | null;
 }
 
 export interface PurchaseItem {

@@ -11,7 +11,7 @@ export function PurchaseRow({ purchase }: { purchase: Purchase }) {
     <ListRow
       to={`/purchases/${purchase.id}`}
       density="compra"
-      leading={<Avatar name={storeName(purchase)} />}
+      leading={<Avatar name={storeName(purchase)} logo={purchase.store?.logo} />}
       title={storeName(purchase)}
       subtitle={`${formatPurchaseDate(purchase.purchased_at)} · ${count} ${count === 1 ? 'item' : 'itens'}`}
       trailing={

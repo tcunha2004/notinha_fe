@@ -55,7 +55,7 @@ export function PurchaseDetail() {
         <PurchaseHero
           purchase={purchase}
           heading="h1"
-          badge={<Avatar name={storeName(purchase)} size="lg" />}
+          badge={<Avatar name={storeName(purchase)} logo={purchase.store?.logo} size="lg" />}
         />
       </div>
 
