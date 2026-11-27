@@ -190,3 +190,11 @@ export const purchases: Purchase[] = [
   summary('p9', stores.bomDia, '2026-10-21T11:40:00', 15, 201.47, 'PIX'),
   summary('p10', stores.emporio, '2026-10-14T16:25:00', 6, 94.1, 'DÉBITO'),
 ];
+
+/** The catalog as GET /products returns it (sorted by name). */
+export const products: Product[] = [
+  { id: 'prod-Café', name: 'Café torrado', brand: 'Pilão', package_size: 500, package_unit: 'g' },
+  product('Pão de forma'),
+  product('Pão francês'),
+  product('Sacola'),
+];

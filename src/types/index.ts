@@ -41,8 +41,10 @@ export interface PurchaseItem {
 
 /** What the edit sheet sends; the API recomputes the line total. */
 export interface ItemInput {
-  /** The product name: the API links the item to the product with this name. */
-  name: string;
+  /** The picked product; null leaves the item unidentified. */
+  product_id: string | null;
+  /** "Criar novo produto": the API creates it on save and links it (wins over product_id). */
+  new_product?: Omit<Product, 'id'>;
   quantity: number;
   unit: string;
   unit_price: number;

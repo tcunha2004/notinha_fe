@@ -1,4 +1,4 @@
-import type { ItemInput, Purchase, PurchaseStatus } from '../types';
+import type { ItemInput, Product, Purchase, PurchaseStatus } from '../types';
 import { request } from './api';
 
 /** The API answered with an error. `status` tells the screens what to show
@@ -30,6 +30,11 @@ export async function getPurchase(id: string): Promise<Purchase | undefined> {
   // 422 = not even a valid id
   if (response.status === 404 || response.status === 422) return undefined;
   return json(response);
+}
+
+/** The whole product catalog (shared by every user), sorted by name. */
+export async function listProducts(): Promise<Product[]> {
+  return json(await request('/products'));
 }
 
 /** Edits an item (or adds one when `itemId` is undefined); resolves to the re-checked purchase. */

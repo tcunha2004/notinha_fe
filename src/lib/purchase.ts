@@ -1,5 +1,5 @@
-import type { Purchase, PurchaseItem } from '../types';
-import { formatPurchaseDate } from './format';
+import type { Product, Purchase, PurchaseItem } from '../types';
+import { formatPackage, formatPurchaseDate } from './format';
 
 /** Sums money in integer cents to dodge floating-point drift. */
 export function sumAmounts(values: number[]) {
@@ -55,7 +55,24 @@ export function getInitials(name: string) {
     .join('');
 }
 
-/** Friendly name for the edit form: the product's, else what the receipt says. */
+/** "Pilão · 500 g": what tells apart products with the same name. Empty when neither is known. */
+export const productDetail = (product: Omit<Product, 'id'>) =>
+  [
+    product.brand,
+    product.package_size && product.package_unit
+      ? formatPackage(product.package_size, product.package_unit)
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+/** Lowercase, no accents, same length as the input: "Pão" → "pao", so search can map matches back. */
+export const foldText = (text: string) =>
+  Array.from(text, (char) => char.normalize('NFD').charAt(0))
+    .join('')
+    .toLowerCase();
+
+/** The item's name: the product's, else what the receipt says. */
 export const itemLabel = (item: PurchaseItem) => item.product?.name ?? item.raw_description ?? '';
 
 /** "PAO FRANCES KG" → "Pao frances kg": receipts shout; lists shouldn't. */

@@ -4,6 +4,8 @@ import { cn } from '../../lib/cn';
 const tones = {
   /** 24px state chip ("Revisar"). */
   atencao: 'h-6 px-2.5 texto-micro bg-atencao-50 text-atencao-700',
+  /** 24px, something created on save ("Novo"). */
+  novo: 'h-6 px-2.5 texto-micro bg-verde-50 text-verde-700',
   /** 32px, shown after the reading ("A soma dos itens confere com o total"). */
   confirmacao: 'h-8 px-3.5 text-sm leading-[18px] font-semibold bg-verde-50 text-verde-700',
   /** 32px, the reading needs a look. */

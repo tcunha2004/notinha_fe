@@ -1,7 +1,12 @@
 import { LoaderCircle } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Navigate, useFetcher, useNavigate, useParams } from 'react-router';
 import { usePurchase, type itemAction } from '../app/loaders';
+import {
+  ProductField,
+  ProductPicker,
+  type ProductChoice,
+} from '../components/domain/ProductPicker';
 import { Button } from '../components/ui/Button';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { SaveError, Sheet, SheetHeader } from '../components/ui/Sheet';
@@ -13,7 +18,6 @@ import {
   formatUnit,
   parseDecimal,
 } from '../lib/format';
-import { itemLabel } from '../lib/purchase';
 import type { PurchaseItem, Unit } from '../types';
 
 const UNITS = ['UN', 'KG', 'L'] as const satisfies readonly Unit[];
@@ -39,18 +43,50 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const failed = fetcher.state === 'idle' && fetcher.data && 'error' in fetcher.data;
 
-  const [name, setName] = useState(item ? itemLabel(item) : '');
+  const [product, setProduct] = useState<ProductChoice | null>(item?.product ?? null);
+  // The product picker is a step inside this sheet; the form keeps its values meanwhile.
+  const [picking, setPicking] = useState(false);
+  const productField = useRef<HTMLButtonElement>(null);
+  const backFromPicker = useRef(false);
+  useEffect(() => {
+    // Back on the form: focus returns to the field that opened the picker.
+    if (!picking && backFromPicker.current) productField.current?.focus();
+    backFromPicker.current = false;
+  }, [picking]);
+  const closePicker = () => {
+    backFromPicker.current = true;
+    setPicking(false);
+  };
   const [quantity, setQuantity] = useState(item ? formatQuantity(item.quantity, item.unit) : '1');
   const [unit, setUnit] = useState(item?.unit ?? 'UN');
   const [unitPrice, setUnitPrice] = useState(item ? formatDecimal(item.unit_price) : '');
   const [discount, setDiscount] = useState(formatDecimal(item?.discount ?? 0));
   const gross = parseDecimal(quantity) * parseDecimal(unitPrice) - parseDecimal(discount);
   const total = Math.max(0, Math.round(gross * 100) / 100);
-  const missing = !name.trim()
-    ? 'Dê um nome ao item'
-    : parseDecimal(quantity) <= 0
-      ? 'Informe a quantidade'
-      : null;
+  // A new item needs a product: nothing else would name it. A read one keeps the receipt text.
+  const missing =
+    !item && !product
+      ? 'Escolha o produto do item'
+      : parseDecimal(quantity) <= 0
+        ? 'Informe a quantidade'
+        : null;
+
+  if (picking) {
+    return (
+      <Sheet labelledBy={titleId} onClose={onClose}>
+        <ProductPicker
+          titleId={titleId}
+          current={product}
+          onPick={(choice) => {
+            setProduct(choice);
+            closePicker();
+          }}
+          onBack={closePicker}
+          onClose={onClose}
+        />
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet labelledBy={titleId} onClose={onClose}>
@@ -60,7 +96,15 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
           if (missing || saving) return;
           void fetcher.submit(
             {
-              name: name.trim(),
+              product_id: product?.id ?? null,
+              ...(product?.id === null && {
+                new_product: {
+                  name: product.name,
+                  brand: product.brand,
+                  package_size: product.package_size,
+                  package_unit: product.package_unit,
+                },
+              }),
               quantity: parseDecimal(quantity),
               unit,
               unit_price: parseDecimal(unitPrice),
@@ -92,13 +136,7 @@ function ItemForm({ item, onClose }: { item?: PurchaseItem; onClose: () => void 
           )}
 
           <fieldset disabled={saving} className="contents">
-            <TextField
-              label="Descrição"
-              value={name}
-              placeholder="Ex.: Pão francês"
-              autoFocus={!item}
-              onChange={(event) => setName(event.target.value)}
-            />
+            <ProductField ref={productField} choice={product} onOpen={() => setPicking(true)} />
             <div className="grid grid-cols-2 gap-3">
               <TextField
                 label="Quantidade"

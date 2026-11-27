@@ -4,12 +4,13 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderGoogleButton } from '../lib/gis';
 import { getMe, loginWithGoogle, logout } from '../services/auth';
-import { purchases } from '../mocks/purchases';
+import { products, purchases } from '../mocks/purchases';
 import {
   ApiError,
   deleteItem,
   deletePurchase,
   getPurchase,
+  listProducts,
   listPurchases,
   saveItem,
   saveTotal,
@@ -22,6 +23,7 @@ vi.mock('../lib/gis', () => ({ renderGoogleButton: vi.fn() }));
 vi.mock('../services/purchases', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/purchases')>()),
   listPurchases: vi.fn(),
+  listProducts: vi.fn(),
   getPurchase: vi.fn(),
   saveItem: vi.fn(),
   saveTotal: vi.fn(),
@@ -40,6 +42,7 @@ beforeEach(() => {
   vi.mocked(getMe).mockResolvedValue(user);
   vi.mocked(renderGoogleButton).mockResolvedValue();
   vi.mocked(listPurchases).mockResolvedValue(purchases);
+  vi.mocked(listProducts).mockResolvedValue(products);
   vi.mocked(getPurchase).mockImplementation(async (id) => purchases.find((p) => p.id === id));
 });
 
@@ -63,7 +66,7 @@ describe('routes render without crashing', () => {
   it('/purchases/:id/review/items/:itemId opens the edit sheet', async () => {
     renderAt('/purchases/p1/review/items/p1-i8');
     expect(await screen.findByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Pão francês')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Produto Pão francês' })).toBeInTheDocument();
   });
 
   it('shows the review banner for a purchase that needs review', async () => {
@@ -276,22 +279,35 @@ describe('sending a receipt', () => {
 });
 
 describe('correcting items', () => {
-  it('saving an edit sends the parsed numbers and closes the sheet', async () => {
+  it('picking another product and fixing the numbers saves both and closes the sheet', async () => {
     renderAt('/purchases/p1/review/items/p1-i8');
-    const name = await screen.findByDisplayValue('Pão francês');
-    await userEvent.clear(name);
-    await userEvent.type(name, 'Pão de sal');
+    await userEvent.click(await screen.findByRole('button', { name: 'Produto Pão francês' }));
+    // Accent-insensitive search; the linked product is checked.
+    const search = await screen.findByRole('combobox', { name: 'Buscar produto' });
+    await userEvent.type(search, 'pao');
+    expect(
+      await screen.findByRole('option', { name: /Pão francês.*vinculado agora/ }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('option', { name: /Pão de forma/ }));
     await userEvent.click(screen.getByRole('radio', { name: 'un' }));
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p1', 'p1-i8', {
-      name: 'Pão de sal',
+      product_id: 'prod-Pão de forma',
       quantity: 0.412,
       unit: 'UN',
       unit_price: 15.9,
       discount: 0,
     });
     expect(getPurchase).toHaveBeenCalledTimes(2); // reloaded: totals and status refresh
+  });
+
+  it('Escape in the picker goes back to the form, keeping the sheet open', async () => {
+    renderAt('/purchases/p1/review/items/p1-i8');
+    await userEvent.click(await screen.findByRole('button', { name: 'Produto Pão francês' }));
+    await screen.findByRole('combobox', { name: 'Buscar produto' });
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Produto Pão francês' })).toHaveFocus();
   });
 
   it('a failed save keeps the sheet open with the error', async () => {
@@ -302,24 +318,53 @@ describe('correcting items', () => {
     expect(screen.getByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
   });
 
-  it('adds an item the reading missed', async () => {
+  it('adds an item the reading missed, creating its product with brand and package', async () => {
     renderAt('/purchases/p2');
     await userEvent.click(await screen.findByRole('link', { name: 'Adicionar item que faltou' }));
     const dialog = await screen.findByRole('dialog', { name: 'Novo item' });
     expect(dialog).not.toHaveTextContent('Como está na nota');
+    expect(dialog).toHaveTextContent('Nenhum produto vinculado ao item');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
-    expect(saveItem).not.toHaveBeenCalled(); // no name yet
-    await userEvent.type(screen.getByLabelText('Descrição'), 'Sacola');
+    expect(saveItem).not.toHaveBeenCalled(); // no product yet
+
+    await userEvent.click(screen.getByRole('button', { name: /^Produto/ }));
+    // No match: Enter goes to "Criar novo produto", with the typed name filled in.
+    await userEvent.type(await screen.findByRole('combobox'), 'Sacola retornável{Enter}');
+    expect(screen.getByLabelText('Nome do produto')).toHaveValue('Sacola retornável');
+    await userEvent.type(screen.getByLabelText(/Marca/), 'EcoBag');
+    await userEvent.type(screen.getByLabelText(/Embalagem/), '1');
+    await userEvent.click(screen.getByRole('radio', { name: 'un' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Vincular ao item' }));
+    expect(
+      screen.getByRole('button', { name: /Sacola retornável.*Novo.*EcoBag · 1 un/ }),
+    ).toBeInTheDocument();
+
     await userEvent.type(screen.getByLabelText(/Preço unitário/), '0,10');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p2', undefined, {
-      name: 'Sacola',
+      product_id: null,
+      new_product: {
+        name: 'Sacola retornável',
+        brand: 'EcoBag',
+        package_size: 1,
+        package_unit: 'un',
+      },
       quantity: 1,
       unit: 'UN',
       unit_price: 0.1,
       discount: 0,
     });
+  });
+
+  it('creating a name that already exists offers the existing product', async () => {
+    renderAt('/purchases/p2/items/new');
+    await userEvent.click(await screen.findByRole('button', { name: /^Produto/ }));
+    await screen.findByRole('option', { name: /Sacola/ });
+    await userEvent.click(screen.getByRole('option', { name: /Criar novo produto/ }));
+    await userEvent.type(screen.getByLabelText('Nome do produto'), 'sacola');
+    await userEvent.click(screen.getByRole('button', { name: 'Usar este' }));
+    expect(screen.getByRole('button', { name: 'Produto Sacola' })).toBeInTheDocument();
   });
 });
 
