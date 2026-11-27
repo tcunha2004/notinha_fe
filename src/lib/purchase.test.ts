@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { purchases } from '../mocks/purchases';
+import type { Purchase, PurchaseItem } from '../types';
 import { formatMonthYear, formatPurchaseDate, formatQuantity, formatUnit } from './format';
-import { getInitials, getTotals, groupByMonth, sentenceCase } from './purchase';
+import { getInitials, getTotals, groupByMonth, priceChange, sentenceCase } from './purchase';
 
 describe('purchase math', () => {
   it('items of every "ok" purchase add up to its total', async () => {
@@ -51,5 +52,25 @@ describe('formatting', () => {
     expect([formatUnit('UN'), formatUnit('KG'), formatUnit('L')]).toEqual(['un', 'kg', 'L']);
     expect(sentenceCase('ARROZ T1 5KG')).toBe('Arroz t1 5kg');
     expect(sentenceCase('Pão francês')).toBe('Pão francês');
+  });
+});
+
+describe('priceChange', () => {
+  const [p1] = purchases as [Purchase];
+  const [arroz] = p1.items as [PurchaseItem];
+  it('compares the unit price with the previous purchase, in cents', () => {
+    expect(priceChange({ ...arroz, unit_price: 12, previous_unit_price: 10 })).toBe(2);
+    expect(priceChange({ ...arroz, unit_price: 4.79, previous_unit_price: 4.99 })).toBe(-0.2);
+    expect(priceChange({ ...arroz, unit_price: 10, previous_unit_price: 10 })).toBe(0);
+    expect(priceChange({ ...arroz, previous_unit_price: null })).toBeNull();
+  });
+
+  it('mocks follow the API: the oldest purchase of a product has nothing to compare', () => {
+    const oldest = purchases.at(-1)?.items[0];
+    expect(oldest?.previous_unit_price).toBeNull();
+    const shampoo = purchases
+      .find((p) => p.id === 'p6')
+      ?.items.find((i) => i.raw_description === 'SHAMPOO 350ML');
+    expect(shampoo?.previous_unit_price).toBe(18.75); // p8, the latest purchase before p6 that had it
   });
 });

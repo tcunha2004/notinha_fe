@@ -3,6 +3,7 @@ import { formatCurrency, formatDiscount, formatQuantity, formatUnit } from '../.
 import { itemTitle } from '../../lib/purchase';
 import type { PurchaseItem } from '../../types';
 import { ListRow } from '../ui/ListRow';
+import { PriceTrend } from './PriceTrend';
 
 /** "2 un × R$ 8,49 · −R$ 0,20 · confira o valor" */
 function itemDetail(item: PurchaseItem) {
@@ -27,8 +28,12 @@ export function ItemRow({ item, to }: { item: PurchaseItem; to?: string }) {
           {item.flagged && (
             <TriangleAlert aria-hidden size={18} className="shrink-0 text-atencao-700" />
           )}
-          <span className="texto-corpo-forte whitespace-nowrap tabular-nums">
-            {formatCurrency(item.total_amount)}
+          <span className="flex flex-col items-end gap-0.5">
+            <span className="texto-corpo-forte whitespace-nowrap tabular-nums">
+              {formatCurrency(item.total_amount)}
+            </span>
+            {/* A flagged line's price may be misread: comparing it would mislead. */}
+            {!item.flagged && <PriceTrend item={item} />}
           </span>
         </>
       }

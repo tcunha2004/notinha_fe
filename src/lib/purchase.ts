@@ -1,5 +1,5 @@
 import type { Product, Purchase, PurchaseItem } from '../types';
-import { formatPackage, formatPurchaseDate } from './format';
+import { formatCurrency, formatPackage, formatPurchaseDate, formatUnit } from './format';
 
 /** Sums money in integer cents to dodge floating-point drift. */
 export function sumAmounts(values: number[]) {
@@ -94,3 +94,18 @@ export const purchaseSubtitle = (purchase: Purchase) =>
   [formatPurchaseDate(purchase.purchased_at, { withTime: true }), purchase.payment_method]
     .filter(Boolean)
     .join(' · ');
+
+/** Unit price now minus in the previous purchase, in reais (2 = paying R$ 2,00 more per unit).
+ *  null on the product's first purchase: there's nothing to compare with. */
+export const priceChange = (item: PurchaseItem) =>
+  item.previous_unit_price === null
+    ? null
+    : sumAmounts([item.unit_price, -item.previous_unit_price]);
+
+/** "R$ 2,00 mais caro por un que na compra anterior"; null when there's no change to point out. */
+export function trendSentence(item: PurchaseItem) {
+  const change = priceChange(item);
+  if (!change) return null;
+  const amount = formatCurrency(Math.abs(change));
+  return `${amount} ${change > 0 ? 'mais caro' : 'mais barato'} por ${formatUnit(item.unit)} que na compra anterior`;
+}

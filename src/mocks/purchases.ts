@@ -70,6 +70,7 @@ function items(purchaseId: string, seeds: ItemSeed[]): PurchaseItem[] {
     discount: 0,
     total_amount,
     flagged: false,
+    previous_unit_price: null,
     ...extra,
   }));
 }
@@ -122,6 +123,7 @@ function generatedItems(purchaseId: string, count: number, total: number): Purch
       discount: 0,
       total_amount: cents / 100,
       flagged: false,
+      previous_unit_price: null,
     };
   });
 }
@@ -146,8 +148,25 @@ function summary(
   };
 }
 
+/** What the API's SQL does: each item gets the unit price of the same product (same unit)
+ *  in the purchase before it. `list` is newest first, like GET /purchases. */
+function withPreviousPrices(list: Purchase[]): Purchase[] {
+  const last = new Map<string, number>();
+  for (const purchase of [...list].reverse()) {
+    const here = new Map<string, number>(); // this purchase's lines don't compare to each other
+    for (const item of purchase.items) {
+      if (!item.product) continue;
+      const key = `${item.product.id}|${item.unit}`;
+      item.previous_unit_price = last.get(key) ?? null;
+      if (!here.has(key)) here.set(key, item.unit_price);
+    }
+    for (const [key, price] of here) last.set(key, price);
+  }
+  return list;
+}
+
 // Dates are local time (no offset) so labels render the same in any timezone.
-export const purchases: Purchase[] = [
+export const purchases: Purchase[] = withPreviousPrices([
   {
     id: 'p1',
     store: stores.bomDia,
@@ -189,7 +208,7 @@ export const purchases: Purchase[] = [
   summary('p8', stores.valeVerde, '2026-10-28T18:10:00', 27, 389.2, 'CRÉDITO'),
   summary('p9', stores.bomDia, '2026-10-21T11:40:00', 15, 201.47, 'PIX'),
   summary('p10', stores.emporio, '2026-10-14T16:25:00', 6, 94.1, 'DÉBITO'),
-];
+]);
 
 /** The catalog as GET /products returns it (sorted by name). */
 export const products: Product[] = [

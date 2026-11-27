@@ -37,6 +37,8 @@ export interface PurchaseItem {
   total_amount: number;
   /** Something wasn't read, or quantity × price doesn't give the line total. */
   flagged: boolean;
+  /** Unit price of the same product (same unit) in the user's previous purchase; null the first time. */
+  previous_unit_price: number | null;
 }
 
 /** What the edit sheet sends; the API recomputes the line total. */
