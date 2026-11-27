@@ -73,10 +73,14 @@ export const photoUrl = (purchaseId: string) =>
   `${import.meta.env.VITE_API_URL}/purchases/${purchaseId}/photo`;
 
 /** Sends the receipt photo; resolves once the agent has read and saved it. */
-export async function uploadInvoice(file: File): Promise<{ id: string; status: PurchaseStatus }> {
+/** `signal` aborts the upload (Cancelar): the API then stops reading and saves nothing. */
+export async function uploadInvoice(
+  file: File,
+  signal?: AbortSignal,
+): Promise<{ id: string; status: PurchaseStatus }> {
   const body = new FormData();
   body.append('image', file);
-  const response = await request('/invoice/upload_invoice', { method: 'POST', body });
+  const response = await request('/invoice/upload_invoice', { method: 'POST', body, signal });
   // 409 = same store, date and time already saved: the body points to that purchase.
   if (response.status === 409) {
     const { detail } = (await response.json()) as { detail: { purchase_id: string } };

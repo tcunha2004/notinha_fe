@@ -180,7 +180,16 @@ describe('sending a receipt', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Lendo sua nota…' }),
     ).toBeInTheDocument();
-    expect(uploadInvoice).toHaveBeenCalledExactlyOnceWith(photo);
+    expect(uploadInvoice).toHaveBeenCalledExactlyOnceWith(photo, expect.any(AbortSignal));
+  });
+
+  it('Cancelar aborts the upload, so the API saves nothing', async () => {
+    vi.mocked(uploadInvoice).mockReturnValue(new Promise(() => {})); // still reading
+    processing();
+    await userEvent.click(await screen.findByRole('link', { name: 'Cancelar' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+    const [, signal] = vi.mocked(uploadInvoice).mock.calls[0] ?? [];
+    expect(signal?.aborted).toBe(true);
   });
 
   it('a photo over 10 MB is refused before uploading', async () => {
@@ -255,7 +264,7 @@ describe('sending a receipt', () => {
     await screen.findByRole('heading', { level: 1, name: 'Não deu pra enviar agora' });
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
     expect(await screen.findByRole('heading', success)).toBeInTheDocument();
-    expect(uploadInvoice).toHaveBeenNthCalledWith(2, photo);
+    expect(uploadInvoice).toHaveBeenNthCalledWith(2, photo, expect.any(AbortSignal));
   });
 
   it('an expired session goes to login', async () => {
