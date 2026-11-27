@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
 import { BrandMark } from '../components/domain/BrandMark';
@@ -9,6 +9,7 @@ import { KeyValueList } from '../components/ui/KeyValueList';
 import { ListRow } from '../components/ui/ListRow';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { Sheet, SheetHeader } from '../components/ui/Sheet';
+import { cn } from '../lib/cn';
 import { formatCurrency, formatPurchaseDate, formatQuantity, formatUnit } from '../lib/format';
 import {
   brandName,
@@ -22,7 +23,7 @@ import {
   type ProductHistory,
 } from '../lib/purchase';
 
-/** `products/:productKey`: a generic product's price tag, its brands side by side and each brand's history. */
+/** `products/:productKey`: a generic product's price tag, its brands and each brand's history. */
 export function ProductSheet() {
   const purchases = useRouteLoaderData<typeof purchasesLoader>('products');
   const { productKey } = useParams();
@@ -56,19 +57,17 @@ export function ProductSheet() {
 const unitPrice = ({ item }: ProductEntry) =>
   `${formatCurrency(item.unit_price)}/${formatUnit(item.unit)}`;
 
-const variantId = (variant: ProductHistory) => `variante-${variant.product.id}`;
-
 const pricesVary = ({ lowest, highest }: ProductHistory) =>
   lowest.item.unit_price !== highest.item.unit_price;
-
-const countPurchases = ({ entries }: ProductHistory) =>
-  new Set(entries.map((e) => e.purchase.id)).size;
 
 function ProductDetail({ group, nameId }: { group: ProductGroup; nameId: string }) {
   const { name, variants, latest, purchaseCount, spent } = group;
   const [only] = variants as [ProductHistory];
   const many = variants.length > 1;
   const size = productSize(only);
+  // The brand chip tapped (by brandName, so "Sem marca" is one too); null shows every brand.
+  const [brand, setBrand] = useState<string | null>(null);
+  const cheapest = cheapestVariant(group);
 
   return (
     <>
@@ -107,12 +106,22 @@ function ProductDetail({ group, nameId }: { group: ProductGroup; nameId: string 
 
       {many ? (
         <>
-          <BrandComparison group={group} />
+          <BrandChips
+            variants={variants}
+            selected={brand}
+            onToggle={(name) => setBrand(brand === name ? null : name)}
+          />
           <section aria-labelledby="product-history" className="mt-5">
-            <SectionHeader id="product-history" title="Histórico por marca" />
-            {variants.map((variant) => (
-              <VariantHistory key={variant.product.id} variant={variant} />
-            ))}
+            <SectionHeader id="product-history" title="Histórico" />
+            {variants
+              .filter((v) => !brand || brandName(v.product) === brand)
+              .map((variant) => (
+                <VariantHistory
+                  key={variant.product.id}
+                  variant={variant}
+                  cheapest={variant === cheapest}
+                />
+              ))}
           </section>
         </>
       ) : (
@@ -142,62 +151,52 @@ function ProductDetail({ group, nameId }: { group: ProductGroup; nameId: string 
   );
 }
 
-/** The brands side by side by their latest price; tapping one jumps to its history below. */
-function BrandComparison({ group }: { group: ProductGroup }) {
-  const cheapest = cheapestVariant(group);
-  const jumpTo = (variant: ProductHistory) => {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    document
-      .getElementById(variantId(variant))
-      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-  };
+/** One chip per brand, scrolling sideways; tapping one filters the history below. */
+function BrandChips({
+  variants,
+  selected,
+  onToggle,
+}: {
+  variants: ProductHistory[];
+  selected: string | null;
+  onToggle: (name: string) => void;
+}) {
+  // A brand sold in two sizes is two variants but one chip.
+  const brands = new Map(variants.map((v) => [brandName(v.product), v.product]));
   return (
     <section aria-labelledby="product-brands" className="mt-5">
-      <SectionHeader id="product-brands" title="Compare as marcas" trailing="Último preço" />
-      <ul>
-        {group.variants.map((variant) => {
-          const count = countPurchases(variant);
-          return (
-            <li key={variant.product.id}>
-              <button
-                type="button"
-                onClick={() => jumpTo(variant)}
-                className="flex min-h-18 w-full items-center gap-3.5 px-5 py-3 text-left transition-colors hover:bg-superficie focus-visible:-outline-offset-2 active:bg-superficie"
-              >
-                <BrandMark
-                  brand={variant.product.brand}
-                  logo={variant.product.brand_logo}
-                  size="md"
-                />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate texto-corpo-forte">{brandName(variant.product)}</span>
-                  <span className="truncate texto-legenda text-texto-secundario tabular-nums">
-                    {[variantSize(variant), `${count} ${count === 1 ? 'compra' : 'compras'}`]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                </span>
-                <span className="flex flex-col items-end gap-1">
-                  <span className="texto-corpo-forte whitespace-nowrap tabular-nums">
-                    {unitPrice(variant.latest)}
-                  </span>
-                  {variant === cheapest && <Badge tone="novo">Mais barata</Badge>}
-                </span>
-              </button>
-            </li>
-          );
-        })}
+      <SectionHeader id="product-brands" title="Marcas" />
+      <ul className="flex gap-2 overflow-x-auto px-5 py-1 [scrollbar-width:none]">
+        {[...brands].map(([name, product]) => (
+          <li key={name} className="shrink-0">
+            <button
+              type="button"
+              aria-pressed={selected === name}
+              onClick={() => onToggle(name)}
+              className={cn(
+                'pressable inline-flex h-10 items-center gap-2 rounded-full border pr-3.5 pl-1',
+                selected === name ? 'border-transparent bg-texto text-fundo' : 'border-linha',
+              )}
+            >
+              {/* The mark keeps its own ink: initials would vanish on the selected chip. */}
+              <span className="contents text-texto">
+                <BrandMark brand={product.brand} logo={product.brand_logo} size="xs" />
+              </span>
+              <span className="texto-corpo-forte whitespace-nowrap">{name}</span>
+            </button>
+          </li>
+        ))}
       </ul>
     </section>
   );
 }
 
 /** One brand's purchases under a header that stays on top while its rows scroll by. */
-function VariantHistory({ variant }: { variant: ProductHistory }) {
+function VariantHistory({ variant, cheapest }: { variant: ProductHistory; cheapest: boolean }) {
   const headingId = useId();
   const size = variantSize(variant);
   return (
-    <section id={variantId(variant)} aria-labelledby={headingId} className="scroll-mt-2">
+    <section aria-labelledby={headingId}>
       <div className="sticky top-0 z-10 flex min-h-13 items-center gap-3 border-b border-linha bg-superficie-elevada px-5 py-2">
         <BrandMark brand={variant.product.brand} logo={variant.product.brand_logo} size="sm" />
         <h4 id={headingId} className="min-w-0 truncate texto-corpo-forte">
@@ -205,6 +204,11 @@ function VariantHistory({ variant }: { variant: ProductHistory }) {
           {size && ' '}
           {size && <span className="font-normal text-texto-secundario">· {size}</span>}
         </h4>
+        {cheapest && (
+          <Badge tone="novo" className="shrink-0">
+            Mais barata
+          </Badge>
+        )}
         {pricesVary(variant) && (
           <span className="ml-auto shrink-0 texto-legenda text-texto-secundario tabular-nums">
             menor {unitPrice(variant.lowest)}

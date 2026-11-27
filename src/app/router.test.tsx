@@ -74,6 +74,7 @@ describe('routes render without crashing', () => {
     renderAt(`/products/${encodeURIComponent('pao frances')}`);
     const sheet = await screen.findByRole('dialog', { name: 'Pão francês' });
     expect(within(sheet).getByText('Vendido por kg')).toBeInTheDocument();
+    expect(within(sheet).queryByRole('heading', { name: 'Marcas' })).not.toBeInTheDocument();
   });
 
   it('a product with several brands: one card, and the sheet splits it by brand', async () => {
@@ -85,10 +86,30 @@ describe('routes render without crashing', () => {
 
     renderAt('/products/achocolatado');
     const sheet = await screen.findByRole('dialog', { name: 'Achocolatado' });
-    expect(within(sheet).getByRole('heading', { name: 'Compare as marcas' })).toBeInTheDocument();
-    for (const brand of ['Nescau · 400 g', 'Toddy · 400 g', 'Sem marca · 400 g'])
+    expect(within(sheet).getByRole('heading', { name: 'Marcas' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('heading', { name: 'Histórico' })).toBeInTheDocument();
+    expect(
+      within(sheet).queryByRole('heading', { name: 'Compare as marcas' }),
+    ).not.toBeInTheDocument();
+    const all = ['Nescau · 400 g', 'Toddy · 400 g', 'Sem marca · 400 g'];
+    for (const brand of all)
       expect(within(sheet).getByRole('heading', { name: brand })).toBeInTheDocument();
-    expect(within(sheet).getByText('Mais barata')).toBeInTheDocument();
+    // The cheapest badge now sits on Toddy's history header.
+    const toddyHeader = within(sheet).getByRole('heading', { name: 'Toddy · 400 g' })
+      .parentElement as HTMLElement;
+    expect(within(toddyHeader).getByText('Mais barata')).toBeInTheDocument();
+
+    const chip = within(sheet).getByRole('button', { name: 'Toddy' });
+    await userEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    expect(within(sheet).getByRole('heading', { name: 'Toddy · 400 g' })).toBeInTheDocument();
+    expect(
+      within(sheet).queryByRole('heading', { name: 'Nescau · 400 g' }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(chip); // tap again: whole history back
+    for (const brand of all)
+      expect(within(sheet).getByRole('heading', { name: brand })).toBeInTheDocument();
   });
 
   it('the brand row filters the products grid, together with the search', async () => {
