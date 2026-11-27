@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -57,6 +57,7 @@ describe('routes render without crashing', () => {
     ['/scan', 'Enviar nota'],
     ['/purchases/p1/review', 'Nota lida'],
     ['/purchases', 'Compras'],
+    ['/products', 'Produtos'],
     ['/purchases/p2', 'Hortifruti Sol Nascente'],
   ])('%s', async (path, heading) => {
     renderAt(path);
@@ -67,6 +68,33 @@ describe('routes render without crashing', () => {
     renderAt('/purchases/p1/review/items/p1-i8');
     expect(await screen.findByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Produto Pão francês' })).toBeInTheDocument();
+  });
+
+  it('/products/:productKey opens the product sheet', async () => {
+    renderAt(`/products/${encodeURIComponent('pao frances')}`);
+    const sheet = await screen.findByRole('dialog', { name: 'Pão francês' });
+    expect(within(sheet).getByText('Vendido por kg')).toBeInTheDocument();
+  });
+
+  it('a product with several brands: one card, and the sheet splits it by brand', async () => {
+    renderAt('/products');
+    const card = await screen.findByRole('link', { name: /^Achocolatado/ });
+    expect(within(card).queryByText('3 marcas')).not.toBeInTheDocument();
+    // All three are 400 g: the card can say so.
+    expect(within(card).getByText('400 g')).toBeInTheDocument();
+
+    renderAt('/products/achocolatado');
+    const sheet = await screen.findByRole('dialog', { name: 'Achocolatado' });
+    expect(within(sheet).getByRole('heading', { name: 'Compare as marcas' })).toBeInTheDocument();
+    for (const brand of ['Nescau · 400 g', 'Toddy · 400 g', 'Sem marca · 400 g'])
+      expect(within(sheet).getByRole('heading', { name: brand })).toBeInTheDocument();
+    expect(within(sheet).getByText('Mais barata')).toBeInTheDocument();
+  });
+
+  it('the receipt review shows the brand after the item name', async () => {
+    renderAt('/purchases/p1/review');
+    await screen.findByRole('heading', { level: 1, name: 'Nota lida' });
+    expect(screen.getByRole('link', { name: /Café torrado · Pilão/ })).toBeInTheDocument();
   });
 
   it('shows the review banner for a purchase that needs review', async () => {

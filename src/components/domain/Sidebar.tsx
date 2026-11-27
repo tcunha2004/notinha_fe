@@ -1,4 +1,4 @@
-import { Camera, House, LogOut, ReceiptText } from 'lucide-react';
+import { Camera, House, LogOut, Package, ReceiptText } from 'lucide-react';
 import { Form, Link, NavLink } from 'react-router';
 import { cn } from '../../lib/cn';
 import { Button } from '../ui/Button';
@@ -7,6 +7,7 @@ import { Logo } from './Logo';
 const items = [
   { to: '/', label: 'Início', icon: House },
   { to: '/purchases', label: 'Compras', icon: ReceiptText },
+  { to: '/products', label: 'Produtos', icon: Package },
 ];
 
 /** Desktop (≥ 1024px) version of the tab bar: flat, separated by a line, no shadow. */

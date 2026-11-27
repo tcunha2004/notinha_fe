@@ -3,12 +3,13 @@ import { Sidebar } from '../components/domain/Sidebar';
 import { TabBar } from '../components/domain/TabBar';
 import { cn } from '../lib/cn';
 
-const TAB_ROUTES = ['/', '/purchases'];
+const TAB_ROUTES = ['/', '/purchases', '/products'];
 
 /** Navigation shell: tab bar below 1024px, sidebar from 1024px (pure CSS switch). */
 export function AppShell() {
   const { pathname } = useLocation();
-  const showTabBar = TAB_ROUTES.includes(pathname);
+  // The product sheet opens over its grid: keep the grid's tab bar under it.
+  const showTabBar = TAB_ROUTES.includes(pathname) || pathname.startsWith('/products/');
   return (
     <div className="min-h-dvh lg:pl-70">
       <Sidebar className="hidden lg:flex" />

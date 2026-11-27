@@ -1,4 +1,4 @@
-import { Camera, House, ReceiptText, type LucideIcon } from 'lucide-react';
+import { Camera, House, Package, ReceiptText, type LucideIcon } from 'lucide-react';
 import { Link, NavLink } from 'react-router';
 import { cn } from '../../lib/cn';
 
@@ -35,8 +35,9 @@ export function TabBar({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="mx-auto flex max-w-[640px] items-center justify-between px-8">
+      <div className="mx-auto flex max-w-[640px] items-center justify-around px-5">
         <Tab to="/" label="Início" icon={House} />
+        <Tab to="/purchases" label="Compras" icon={ReceiptText} />
         <Link
           to="/scan"
           aria-label="Enviar nota"
@@ -44,7 +45,7 @@ export function TabBar({ className }: { className?: string }) {
         >
           <Camera aria-hidden size={26} strokeWidth={2} />
         </Link>
-        <Tab to="/purchases" label="Compras" icon={ReceiptText} />
+        <Tab to="/products" label="Produtos" icon={Package} />
       </div>
     </nav>
   );
