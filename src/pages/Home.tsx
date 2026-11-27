@@ -1,9 +1,8 @@
 import { Link, useLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
+import { HeaderActions } from '../components/domain/HeaderActions';
 import { Logo } from '../components/domain/Logo';
-import { ProfileMenu } from '../components/domain/ProfileMenu';
 import { PurchaseRow } from '../components/domain/PurchaseRow';
-import { ThemeToggle } from '../components/domain/ThemeToggle';
 import { Amount } from '../components/ui/Amount';
 import { Button } from '../components/ui/Button';
 import { SectionHeader } from '../components/ui/SectionHeader';
@@ -22,10 +21,7 @@ export function Home() {
       <h1 className="sr-only">Início</h1>
       <header className="flex h-11 items-center justify-between px-5">
         <Logo className="text-[24px] lg:invisible" />
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <ProfileMenu />
-        </div>
+        <HeaderActions />
       </header>
 
       {month ? (
