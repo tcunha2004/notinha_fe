@@ -10,6 +10,7 @@ import {
   cheapestVariant,
   groupByProduct,
   groupProducts,
+  listBrands,
   priceChange,
   sentenceCase,
 } from './purchase';
@@ -131,5 +132,13 @@ describe('groupProducts', () => {
     // Latest prices: Nescau 10,49 (p3) · Toddy 8,33 (p6) · sem marca 9,37 (p8), all 400 g.
     expect(cheapestVariant(find('achocolatado') as ProductGroup)?.product.brand).toBe('Toddy');
     expect(cheapestVariant(find('cafe torrado') as ProductGroup)).toBeUndefined(); // one brand
+  });
+});
+
+describe('listBrands', () => {
+  it('lists each brand once, most bought first, without "sem marca"', () => {
+    const brands = listBrands(groupProducts(purchases));
+    expect(brands.map((b) => b.name)).toEqual(['Nescau', 'Toddy', 'Itambé', 'Pilão']);
+    expect(brands[0]).toEqual({ name: 'Nescau', logo: 'https://example.com/nescau.png' });
   });
 });

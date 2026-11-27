@@ -2,8 +2,15 @@ import { useState } from 'react';
 import { cn } from '../../lib/cn';
 import { getInitials } from '../../lib/purchase';
 
-/** Store logo, falling back to initials in a gray circle when there is none or it fails to load.
- *  Decorative: the store name is always shown next to it. */
+const sizes = {
+  xs: 'size-6 text-[10px]',
+  sm: 'size-8 text-[12px]',
+  md: 'size-11 text-[15px]',
+  lg: 'size-16 text-[22px]',
+};
+
+/** Store or brand logo, falling back to initials in a gray circle when there is none or it fails to load.
+ *  Decorative: the name is always shown next to it, or labels the button around it. */
 export function Avatar({
   name,
   logo,
@@ -11,10 +18,10 @@ export function Avatar({
 }: {
   name: string;
   logo?: string | null;
-  size?: 'md' | 'lg';
+  size?: keyof typeof sizes;
 }) {
   const [broken, setBroken] = useState(false);
-  const base = cn('shrink-0 rounded-full', size === 'md' ? 'size-11' : 'size-16');
+  const base = cn('shrink-0 rounded-full', sizes[size]);
   if (logo && !broken) {
     return (
       <img
@@ -34,7 +41,6 @@ export function Avatar({
       className={cn(
         base,
         'grid place-items-center bg-superficie font-bold tracking-[-0.01em] [font-stretch:112%]',
-        size === 'md' ? 'text-[15px]' : 'text-[22px]',
       )}
     >
       {getInitials(name)}

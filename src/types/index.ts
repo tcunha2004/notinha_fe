@@ -15,6 +15,8 @@ export interface Product {
   id: string;
   name: string;
   brand: string | null;
+  /** The brand's logo found on the web; null when there's none (or not searched yet). */
+  brand_logo?: string | null;
   /** In package_unit; null for items sold by weight/volume. */
   package_size: number | null;
   package_unit: 'g' | 'ml' | 'un' | null;

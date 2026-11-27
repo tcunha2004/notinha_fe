@@ -154,10 +154,11 @@ const variant = (
   brand: string | null,
   package_size: number,
   package_unit: Product['package_unit'],
-): Product => ({ id, name, brand, package_size, package_unit });
+  brand_logo: string | null = null,
+): Product => ({ id, name, brand, brand_logo, package_size, package_unit });
 
-const achocolatado = (brand: string | null) =>
-  variant(`prod-achocolatado-${brand ?? 'sem-marca'}`, 'Achocolatado', brand, 400, 'g');
+const achocolatado = (brand: string | null, logo?: string) =>
+  variant(`prod-achocolatado-${brand ?? 'sem-marca'}`, 'Achocolatado', brand, 400, 'g', logo);
 
 /** Lines whose receipt printed a brand: same generic product, a product of its own per brand. */
 const BRANDED: [purchaseId: string, raw: string, printed: string, product: Product][] = [
@@ -173,8 +174,18 @@ const BRANDED: [purchaseId: string, raw: string, printed: string, product: Produ
     'LEITE INTEGRAL ITAMBE 1L',
     variant('prod-leite-itambe', 'Leite integral', 'Itambé', 1000, 'ml'),
   ],
-  ['p3', 'ACHOCOLATADO 400G', 'ACHOC NESCAU 400G', achocolatado('Nescau')],
-  ['p5', 'ACHOCOLATADO 400G', 'ACHOC NESCAU 400G', achocolatado('Nescau')],
+  [
+    'p3',
+    'ACHOCOLATADO 400G',
+    'ACHOC NESCAU 400G',
+    achocolatado('Nescau', 'https://example.com/nescau.png'),
+  ],
+  [
+    'p5',
+    'ACHOCOLATADO 400G',
+    'ACHOC NESCAU 400G',
+    achocolatado('Nescau', 'https://example.com/nescau.png'),
+  ],
   ['p6', 'ACHOCOLATADO 400G', 'ACHOC TODDY 400G', achocolatado('Toddy')],
   ['p9', 'ACHOCOLATADO 400G', 'ACHOC TODDY 400G', achocolatado('Toddy')],
   ['p8', 'ACHOCOLATADO 400G', 'ACHOCOLATADO 400G', achocolatado(null)],

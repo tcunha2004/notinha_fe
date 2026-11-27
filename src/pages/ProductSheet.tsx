@@ -1,7 +1,7 @@
-import { Tag } from 'lucide-react';
 import { useId, useMemo } from 'react';
 import { useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
+import { BrandMark } from '../components/domain/BrandMark';
 import { Price } from '../components/domain/Price';
 import { PriceTrend } from '../components/domain/PriceTrend';
 import { Badge } from '../components/ui/Badge';
@@ -9,12 +9,10 @@ import { KeyValueList } from '../components/ui/KeyValueList';
 import { ListRow } from '../components/ui/ListRow';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { Sheet, SheetHeader } from '../components/ui/Sheet';
-import { cn } from '../lib/cn';
 import { formatCurrency, formatPurchaseDate, formatQuantity, formatUnit } from '../lib/format';
 import {
   brandName,
   cheapestVariant,
-  getInitials,
   groupProducts,
   productSize,
   storeName,
@@ -166,7 +164,11 @@ function BrandComparison({ group }: { group: ProductGroup }) {
                 onClick={() => jumpTo(variant)}
                 className="flex min-h-18 w-full items-center gap-3.5 px-5 py-3 text-left transition-colors hover:bg-superficie focus-visible:-outline-offset-2 active:bg-superficie"
               >
-                <BrandMark brand={variant.product.brand} />
+                <BrandMark
+                  brand={variant.product.brand}
+                  logo={variant.product.brand_logo}
+                  size="md"
+                />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate texto-corpo-forte">{brandName(variant.product)}</span>
                   <span className="truncate texto-legenda text-texto-secundario tabular-nums">
@@ -197,7 +199,7 @@ function VariantHistory({ variant }: { variant: ProductHistory }) {
   return (
     <section id={variantId(variant)} aria-labelledby={headingId} className="scroll-mt-2">
       <div className="sticky top-0 z-10 flex min-h-13 items-center gap-3 border-b border-linha bg-superficie-elevada px-5 py-2">
-        <BrandMark brand={variant.product.brand} small />
+        <BrandMark brand={variant.product.brand} logo={variant.product.brand_logo} size="sm" />
         <h4 id={headingId} className="min-w-0 truncate texto-corpo-forte">
           {brandName(variant.product)}
           {size && ' '}
@@ -249,25 +251,6 @@ function HistoryRows({
         />
       ))}
     </ul>
-  );
-}
-
-/** The brand's initials in a circle; a tag icon for unbranded items ("SM" would read as a brand). */
-function BrandMark({ brand, small = false }: { brand: string | null; small?: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'grid shrink-0 place-items-center rounded-full bg-superficie font-bold tracking-[-0.01em] [font-stretch:112%]',
-        small ? 'size-8 text-[12px]' : 'size-11 text-[15px]',
-      )}
-    >
-      {brand ? (
-        getInitials(brand)
-      ) : (
-        <Tag size={small ? 15 : 19} strokeWidth={2.25} className="text-texto-secundario" />
-      )}
-    </span>
   );
 }
 

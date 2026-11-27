@@ -206,6 +206,28 @@ export function groupProducts(purchases: Purchase[]): ProductGroup[] {
     .sort((a, b) => b.purchaseCount - a.purchaseCount || a.name.localeCompare(b.name));
 }
 
+export interface BrandOption {
+  name: string;
+  logo: string | null;
+}
+
+/** The brands among these products (unbranded left out), most bought first. */
+export function listBrands(groups: ProductGroup[]): BrandOption[] {
+  const brands = new Map<string, BrandOption & { bought: number }>();
+  for (const { product, purchaseCount } of groups.flatMap((g) => g.variants)) {
+    if (!product.brand) continue;
+    const seen = brands.get(product.brand);
+    brands.set(product.brand, {
+      name: product.brand,
+      logo: product.brand_logo ?? null,
+      bought: (seen?.bought ?? 0) + purchaseCount,
+    });
+  }
+  return [...brands.values()]
+    .sort((a, b) => b.bought - a.bought || a.name.localeCompare(b.name))
+    .map(({ name, logo }) => ({ name, logo }));
+}
+
 /** The variant to point out as cheapest by its latest price, only when every variant compares
  *  (same package and unit) and there's a single winner. */
 export function cheapestVariant({ variants }: ProductGroup) {
