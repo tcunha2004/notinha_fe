@@ -60,3 +60,11 @@ export const formatUnit = (unit: string) => (unit === 'L' ? 'L' : unit.toLowerCa
 
 /** "−R$ 0,20": a real minus sign, not a hyphen. */
 export const formatDiscount = (value: number) => `−${formatCurrency(value)}`;
+
+/** "500 g", "1,5 kg", "2 L", "12 un": packages from 1000 g / 1000 ml up read in kg / L. */
+export function formatPackage(size: number, unit: 'g' | 'ml' | 'un') {
+  const big = unit !== 'un' && size >= 1000;
+  const label = big ? (unit === 'g' ? 'kg' : 'L') : unit;
+  const value = big ? size / 1000 : size;
+  return `${value.toLocaleString(LOCALE, { maximumFractionDigits: 3 })} ${label}`;
+}

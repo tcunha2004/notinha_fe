@@ -1,12 +1,14 @@
-import type { ItemInput, Purchase, PurchaseStatus } from '../types';
+import type { ItemInput, Product, Purchase, PurchaseStatus } from '../types';
 import { request } from './api';
 
 /** The API answered with an error. `status` tells the screens what to show
- *  (401 = logged out, 422 on upload = unreadable photo, 409 on upload = already saved, see `purchaseId`). */
+ *  (401 = logged out, 409 on upload = already saved, see `purchaseId`;
+ *  422 on upload = nothing saved, `reason` 'invalid' = not a grocery/pharmacy receipt, otherwise unreadable). */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly purchaseId?: string,
+    readonly reason?: string,
   ) {
     super(`API error ${status}`);
   }
@@ -28,6 +30,11 @@ export async function getPurchase(id: string): Promise<Purchase | undefined> {
   // 422 = not even a valid id
   if (response.status === 404 || response.status === 422) return undefined;
   return json(response);
+}
+
+/** The whole product catalog (shared by every user), sorted by name. */
+export async function listProducts(): Promise<Product[]> {
+  return json(await request('/products'));
 }
 
 /** Edits an item (or adds one when `itemId` is undefined); resolves to the re-checked purchase. */
@@ -71,14 +78,24 @@ export const photoUrl = (purchaseId: string) =>
   `${import.meta.env.VITE_API_URL}/purchases/${purchaseId}/photo`;
 
 /** Sends the receipt photo; resolves once the agent has read and saved it. */
-export async function uploadInvoice(file: File): Promise<{ id: string; status: PurchaseStatus }> {
+/** `signal` aborts the upload (Cancelar): the API then stops reading and saves nothing. */
+export async function uploadInvoice(
+  file: File,
+  signal?: AbortSignal,
+): Promise<{ id: string; status: PurchaseStatus }> {
   const body = new FormData();
   body.append('image', file);
-  const response = await request('/invoice/upload_invoice', { method: 'POST', body });
+  const response = await request('/invoice/upload_invoice', { method: 'POST', body, signal });
   // 409 = same store, date and time already saved: the body points to that purchase.
   if (response.status === 409) {
     const { detail } = (await response.json()) as { detail: { purchase_id: string } };
     throw new ApiError(409, detail.purchase_id);
+  }
+  if (response.status === 422) {
+    const body = (await response.json().catch(() => null)) as {
+      detail?: { reason?: string };
+    } | null;
+    throw new ApiError(422, undefined, body?.detail?.reason);
   }
   return json(response);
 }

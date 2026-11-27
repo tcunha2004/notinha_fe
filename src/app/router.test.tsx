@@ -1,15 +1,16 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderGoogleButton } from '../lib/gis';
 import { getMe, loginWithGoogle, logout } from '../services/auth';
-import { purchases } from '../mocks/purchases';
+import { products, purchases } from '../mocks/purchases';
 import {
   ApiError,
   deleteItem,
   deletePurchase,
   getPurchase,
+  listProducts,
   listPurchases,
   saveItem,
   saveTotal,
@@ -22,6 +23,7 @@ vi.mock('../lib/gis', () => ({ renderGoogleButton: vi.fn() }));
 vi.mock('../services/purchases', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/purchases')>()),
   listPurchases: vi.fn(),
+  listProducts: vi.fn(),
   getPurchase: vi.fn(),
   saveItem: vi.fn(),
   saveTotal: vi.fn(),
@@ -40,6 +42,7 @@ beforeEach(() => {
   vi.mocked(getMe).mockResolvedValue(user);
   vi.mocked(renderGoogleButton).mockResolvedValue();
   vi.mocked(listPurchases).mockResolvedValue(purchases);
+  vi.mocked(listProducts).mockResolvedValue(products);
   vi.mocked(getPurchase).mockImplementation(async (id) => purchases.find((p) => p.id === id));
 });
 
@@ -54,6 +57,7 @@ describe('routes render without crashing', () => {
     ['/scan', 'Enviar nota'],
     ['/purchases/p1/review', 'Nota lida'],
     ['/purchases', 'Compras'],
+    ['/products', 'Produtos'],
     ['/purchases/p2', 'Hortifruti Sol Nascente'],
   ])('%s', async (path, heading) => {
     renderAt(path);
@@ -63,7 +67,77 @@ describe('routes render without crashing', () => {
   it('/purchases/:id/review/items/:itemId opens the edit sheet', async () => {
     renderAt('/purchases/p1/review/items/p1-i8');
     expect(await screen.findByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Pão francês')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Produto Pão francês' })).toBeInTheDocument();
+  });
+
+  it('/products/:productKey opens the product sheet', async () => {
+    renderAt(`/products/${encodeURIComponent('pao frances')}`);
+    const sheet = await screen.findByRole('dialog', { name: 'Pão francês' });
+    expect(within(sheet).getByText('Vendido por kg')).toBeInTheDocument();
+    expect(within(sheet).queryByRole('heading', { name: 'Marcas' })).not.toBeInTheDocument();
+  });
+
+  it('a product with several brands: one card, and the sheet splits it by brand', async () => {
+    renderAt('/products');
+    const card = await screen.findByRole('link', { name: /^Achocolatado/ });
+    expect(within(card).queryByText('3 marcas')).not.toBeInTheDocument();
+    // All three are 400 g: the card can say so.
+    expect(within(card).getByText('400 g')).toBeInTheDocument();
+
+    renderAt('/products/achocolatado');
+    const sheet = await screen.findByRole('dialog', { name: 'Achocolatado' });
+    expect(within(sheet).getByRole('heading', { name: 'Marcas' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('heading', { name: 'Histórico' })).toBeInTheDocument();
+    expect(
+      within(sheet).queryByRole('heading', { name: 'Compare as marcas' }),
+    ).not.toBeInTheDocument();
+    const all = ['Nescau · 400 g', 'Toddy · 400 g', 'Sem marca · 400 g'];
+    for (const brand of all)
+      expect(within(sheet).getByRole('heading', { name: brand })).toBeInTheDocument();
+    // The cheapest badge now sits on Toddy's history header.
+    const toddyHeader = within(sheet).getByRole('heading', { name: 'Toddy · 400 g' })
+      .parentElement as HTMLElement;
+    expect(within(toddyHeader).getByText('Mais barata')).toBeInTheDocument();
+
+    const chip = within(sheet).getByRole('button', { name: 'Toddy' });
+    await userEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    expect(within(sheet).getByRole('heading', { name: 'Toddy · 400 g' })).toBeInTheDocument();
+    expect(
+      within(sheet).queryByRole('heading', { name: 'Nescau · 400 g' }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(chip); // tap again: whole history back
+    for (const brand of all)
+      expect(within(sheet).getByRole('heading', { name: brand })).toBeInTheDocument();
+  });
+
+  it('the brand row filters the products grid, together with the search', async () => {
+    renderAt('/products');
+    const row = await screen.findByRole('group', { name: 'Filtrar por marca' });
+    const toddy = within(row).getByRole('button', { name: 'Toddy' });
+    expect(toddy).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(toddy);
+    expect(toddy).toHaveAttribute('aria-pressed', 'true');
+    const grid = screen.getByRole('list', { name: 'Produtos' });
+    expect(within(grid).getAllByRole('link')).toHaveLength(1);
+    expect(within(grid).getByRole('link', { name: /^Achocolatado/ })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole('searchbox'), 'leite');
+    expect(screen.getByRole('status')).toHaveTextContent('Nenhum produto com “leite” de Toddy.');
+
+    await userEvent.clear(screen.getByRole('searchbox'));
+    await userEvent.click(toddy); // tap again: filter off
+    expect(
+      within(screen.getByRole('list', { name: 'Produtos' })).getAllByRole('link').length,
+    ).toBeGreaterThan(1);
+  });
+
+  it('the receipt review shows the brand after the item name', async () => {
+    renderAt('/purchases/p1/review');
+    await screen.findByRole('heading', { level: 1, name: 'Nota lida' });
+    expect(screen.getByRole('link', { name: /Café torrado · Pilão/ })).toBeInTheDocument();
   });
 
   it('shows the review banner for a purchase that needs review', async () => {
@@ -180,7 +254,16 @@ describe('sending a receipt', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Lendo sua nota…' }),
     ).toBeInTheDocument();
-    expect(uploadInvoice).toHaveBeenCalledExactlyOnceWith(photo);
+    expect(uploadInvoice).toHaveBeenCalledExactlyOnceWith(photo, expect.any(AbortSignal));
+  });
+
+  it('Cancelar aborts the upload, so the API saves nothing', async () => {
+    vi.mocked(uploadInvoice).mockReturnValue(new Promise(() => {})); // still reading
+    processing();
+    await userEvent.click(await screen.findByRole('link', { name: 'Cancelar' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument();
+    const [, signal] = vi.mocked(uploadInvoice).mock.calls[0] ?? [];
+    expect(signal?.aborted).toBe(true);
   });
 
   it('a photo over 10 MB is refused before uploading', async () => {
@@ -255,7 +338,7 @@ describe('sending a receipt', () => {
     await screen.findByRole('heading', { level: 1, name: 'Não deu pra enviar agora' });
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
     expect(await screen.findByRole('heading', success)).toBeInTheDocument();
-    expect(uploadInvoice).toHaveBeenNthCalledWith(2, photo);
+    expect(uploadInvoice).toHaveBeenNthCalledWith(2, photo, expect.any(AbortSignal));
   });
 
   it('an expired session goes to login', async () => {
@@ -267,22 +350,35 @@ describe('sending a receipt', () => {
 });
 
 describe('correcting items', () => {
-  it('saving an edit sends the parsed numbers and closes the sheet', async () => {
+  it('picking another product and fixing the numbers saves both and closes the sheet', async () => {
     renderAt('/purchases/p1/review/items/p1-i8');
-    const name = await screen.findByDisplayValue('Pão francês');
-    await userEvent.clear(name);
-    await userEvent.type(name, 'Pão de sal');
+    await userEvent.click(await screen.findByRole('button', { name: 'Produto Pão francês' }));
+    // Accent-insensitive search; the linked product is checked.
+    const search = await screen.findByRole('combobox', { name: 'Buscar produto' });
+    await userEvent.type(search, 'pao');
+    expect(
+      await screen.findByRole('option', { name: /Pão francês.*vinculado agora/ }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('option', { name: /Pão de forma/ }));
     await userEvent.click(screen.getByRole('radio', { name: 'un' }));
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p1', 'p1-i8', {
-      description: 'Pão de sal',
+      product_id: 'prod-Pão de forma',
       quantity: 0.412,
       unit: 'UN',
       unit_price: 15.9,
       discount: 0,
     });
     expect(getPurchase).toHaveBeenCalledTimes(2); // reloaded: totals and status refresh
+  });
+
+  it('Escape in the picker goes back to the form, keeping the sheet open', async () => {
+    renderAt('/purchases/p1/review/items/p1-i8');
+    await userEvent.click(await screen.findByRole('button', { name: 'Produto Pão francês' }));
+    await screen.findByRole('combobox', { name: 'Buscar produto' });
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Produto Pão francês' })).toHaveFocus();
   });
 
   it('a failed save keeps the sheet open with the error', async () => {
@@ -293,24 +389,53 @@ describe('correcting items', () => {
     expect(screen.getByRole('dialog', { name: 'Editar item' })).toBeInTheDocument();
   });
 
-  it('adds an item the reading missed', async () => {
+  it('adds an item the reading missed, creating its product with brand and package', async () => {
     renderAt('/purchases/p2');
     await userEvent.click(await screen.findByRole('link', { name: 'Adicionar item que faltou' }));
     const dialog = await screen.findByRole('dialog', { name: 'Novo item' });
     expect(dialog).not.toHaveTextContent('Como está na nota');
+    expect(dialog).toHaveTextContent('Nenhum produto vinculado ao item');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
-    expect(saveItem).not.toHaveBeenCalled(); // no name yet
-    await userEvent.type(screen.getByLabelText('Descrição'), 'Sacola');
+    expect(saveItem).not.toHaveBeenCalled(); // no product yet
+
+    await userEvent.click(screen.getByRole('button', { name: /^Produto/ }));
+    // No match: Enter goes to "Criar novo produto", with the typed name filled in.
+    await userEvent.type(await screen.findByRole('combobox'), 'Sacola retornável{Enter}');
+    expect(screen.getByLabelText('Nome do produto')).toHaveValue('Sacola retornável');
+    await userEvent.type(screen.getByLabelText(/Marca/), 'EcoBag');
+    await userEvent.type(screen.getByLabelText(/Embalagem/), '1');
+    await userEvent.click(screen.getByRole('radio', { name: 'un' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Vincular ao item' }));
+    expect(
+      screen.getByRole('button', { name: /Sacola retornável.*Novo.*EcoBag · 1 un/ }),
+    ).toBeInTheDocument();
+
     await userEvent.type(screen.getByLabelText(/Preço unitário/), '0,10');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(saveItem).toHaveBeenCalledWith('p2', undefined, {
-      description: 'Sacola',
+      product_id: null,
+      new_product: {
+        name: 'Sacola retornável',
+        brand: 'EcoBag',
+        package_size: 1,
+        package_unit: 'un',
+      },
       quantity: 1,
       unit: 'UN',
       unit_price: 0.1,
       discount: 0,
     });
+  });
+
+  it('creating a name that already exists offers the existing product', async () => {
+    renderAt('/purchases/p2/items/new');
+    await userEvent.click(await screen.findByRole('button', { name: /^Produto/ }));
+    await screen.findByRole('option', { name: /Sacola/ });
+    await userEvent.click(screen.getByRole('option', { name: /Criar novo produto/ }));
+    await userEvent.type(screen.getByLabelText('Nome do produto'), 'sacola');
+    await userEvent.click(screen.getByRole('button', { name: 'Usar este' }));
+    expect(screen.getByRole('button', { name: 'Produto Sacola' })).toBeInTheDocument();
   });
 });
 

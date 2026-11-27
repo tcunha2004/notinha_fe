@@ -1,5 +1,5 @@
 import { TriangleAlert } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { StepList, type Step } from '../components/domain/StepList';
 import { Button } from '../components/ui/Button';
@@ -10,15 +10,20 @@ import { uploadInvoice, ApiError } from '../services/purchases';
 const SLOW_MS = 10_000;
 
 /** 'unreadable' = the API said nothing on the photo is legible (422): a new photo is needed.
+ *  'invalid' = it's not a supermarket/pharmacy receipt (422, reason 'invalid'): send another receipt.
  *  'failed' = network or server error: the photo is fine, so we offer to resend the same one.
  *  'duplicate' = this receipt was already saved (409): we point to the existing purchase. */
-type Phase = 'reading' | 'unreadable' | 'failed' | 'duplicate';
+type Phase = 'reading' | 'unreadable' | 'invalid' | 'failed' | 'duplicate';
 
 /** Short title + one sentence + one action (Voz board, "Vazio e erro"). */
 const problems = {
   unreadable: {
     title: 'Não deu pra ler a nota',
     text: 'Tente com mais luz e com a nota inteira dentro do quadro. Nada foi salvo.',
+  },
+  invalid: {
+    title: 'Essa nota não é de mercado',
+    text: 'Por enquanto, o Notinha só lê notas de supermercado e farmácia',
   },
   duplicate: {
     title: 'Esta nota já foi salva',
@@ -72,40 +77,33 @@ export function Processing() {
   const [slow, setSlow] = useState(false);
   const [existingId, setExistingId] = useState<string>();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  // `started` stops StrictMode's double effect from uploading twice;
-  // `alive` drops the answer if the user already left (Cancelar).
-  const started = useRef(false);
-  const alive = useRef(true);
+  const [attempt, setAttempt] = useState(0); // "Tentar de novo" bumps it to upload again
 
-  const send = useCallback(
-    async (image: File) => {
-      try {
-        const { id } = await uploadInvoice(image);
+  // One upload per attempt. Leaving the screen (Cancelar) aborts it: the API stops reading and
+  // saves nothing. StrictMode mounts twice in dev: the first upload is aborted, the second goes on.
+  useEffect(() => {
+    if (!file) return;
+    const controller = new AbortController();
+    const { signal } = controller;
+    uploadInvoice(file, signal).then(
+      ({ id }) => {
         // Straight to "Nota lida": it shows what was read and whether it needs a review.
-        if (alive.current) navigate(`/purchases/${id}/review`, { replace: true });
-      } catch (error) {
-        if (!alive.current) return;
+        if (!signal.aborted) navigate(`/purchases/${id}/review`, { replace: true });
+      },
+      (error: unknown) => {
+        if (signal.aborted) return;
         const code = error instanceof ApiError ? error.status : 0; // 0 = no connection
         if (code === 401) navigate('/login', { replace: true });
         else if (code === 409) {
           setExistingId((error as ApiError).purchaseId);
           setPhase('duplicate');
-        } else setPhase(code === 422 ? 'unreadable' : 'failed');
-      }
-    },
-    [navigate],
-  );
-
-  useEffect(() => {
-    alive.current = true;
-    if (file && !started.current) {
-      started.current = true;
-      void send(file);
-    }
-    return () => {
-      alive.current = false;
-    };
-  }, [file, send]);
+        } else if (code === 422) {
+          setPhase((error as ApiError).reason === 'invalid' ? 'invalid' : 'unreadable');
+        } else setPhase('failed');
+      },
+    );
+    return () => controller.abort();
+  }, [file, attempt, navigate]);
 
   useEffect(() => {
     if (phase !== 'reading') {
@@ -122,7 +120,7 @@ export function Processing() {
   const retry = () => {
     setSlow(false);
     setPhase('reading');
-    void send(file);
+    setAttempt((n) => n + 1);
   };
   const newPhoto = () => navigate('/scan', { replace: true });
   const shell =
@@ -174,6 +172,8 @@ export function Processing() {
         <div className="flex flex-col gap-3">
           {phase === 'unreadable' ? (
             <Button onClick={newPhoto}>Tirar outra foto</Button>
+          ) : phase === 'invalid' ? (
+            <Button onClick={newPhoto}>Enviar outra nota</Button>
           ) : phase === 'duplicate' ? (
             <Button to={`/purchases/${existingId}`}>Ver compra salva</Button>
           ) : (

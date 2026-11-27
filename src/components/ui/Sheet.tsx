@@ -1,4 +1,4 @@
-import { TriangleAlert, X } from 'lucide-react';
+import { ChevronLeft, TriangleAlert, X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { IconButton } from './IconButton';
 
@@ -43,21 +43,28 @@ export function Sheet({ labelledBy, onClose, children }: SheetProps) {
   );
 }
 
-/** Grab handle + close · title row of a sheet. */
+/** Grab handle + close · title row of a sheet. With `onBack` (a step inside the sheet),
+ *  the corner button goes back instead of closing. */
 export function SheetHeader({
   titleId,
   title,
   onClose,
+  onBack,
 }: {
   titleId: string;
   title: string;
   onClose: () => void;
+  onBack?: () => void;
 }) {
   return (
     <>
       <span aria-hidden className="mx-auto block h-1.25 w-9 rounded-full bg-linha lg:hidden" />
       <div className="mt-2 grid h-11 grid-cols-[44px_1fr_44px] items-center gap-2 px-5 lg:mt-0">
-        <IconButton icon={X} label="Fechar" onClick={onClose} />
+        {onBack ? (
+          <IconButton icon={ChevronLeft} label="Voltar" onClick={onBack} />
+        ) : (
+          <IconButton icon={X} label="Fechar" onClick={onClose} />
+        )}
         <h2 id={titleId} className="text-center texto-titulo-3">
           {title}
         </h2>

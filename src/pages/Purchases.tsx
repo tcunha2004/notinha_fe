@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import { useLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
+import { HeaderActions } from '../components/domain/HeaderActions';
 import { PurchaseRow } from '../components/domain/PurchaseRow';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { formatCurrency, formatMonthYear } from '../lib/format';
@@ -11,7 +12,10 @@ export function Purchases() {
 
   return (
     <main className="page-container pt-[max(12px,env(safe-area-inset-top))] animate-surgir">
-      <div className="flex flex-col gap-4 px-5 pt-4">
+      <header className="flex h-11 items-center justify-end px-5">
+        <HeaderActions />
+      </header>
+      <div className="flex flex-col gap-4 px-5 pt-7">
         <h1 className="texto-titulo-1">Compras</h1>
 
         {/* Visual only for now: filtering arrives with the API. */}

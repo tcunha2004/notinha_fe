@@ -13,6 +13,11 @@ describe('Avatar', () => {
     expect(screen.getByText('MB')).toBeInTheDocument();
   });
 
+  it('renders the small sizes', () => {
+    const { container } = render(<Avatar name="Pilão" size="xs" />);
+    expect(container.firstChild).toHaveClass('size-6');
+  });
+
   it('shows initials when the store has no logo', () => {
     render(<Avatar name="Mercado Bom Dia" logo={null} />);
     expect(screen.getByText('MB')).toBeInTheDocument();

@@ -38,6 +38,12 @@
   --color-botao-neutro: #0b0b0c;
   --color-sobre-botao-neutro: #ffffff;
   --color-veu: rgb(11 11 12 / 0.48);
+  /* Price trend vs the previous purchase: paying more is red, paying less is the brand's green. */
+  --color-preco-sobe: #b42318;
+  --color-preco-desce: #007a3d;
+  /* Shelf price tag (Produtos): a quiet green band with deep-green numbers. */
+  --color-etiqueta: #e7faef;
+  --color-sobre-etiqueta: #003d1e;
 
   --font-sans: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
@@ -92,6 +98,10 @@
     --color-marca-texto: #2bd97a;
     --color-botao-neutro: #ffffff;
     --color-sobre-botao-neutro: #0b0b0c;
+    --color-preco-sobe: #ff7b72;
+    --color-preco-desce: #2bd97a;
+    --color-etiqueta: #0c2618;
+    --color-sobre-etiqueta: #2bd97a;
     color-scheme: dark;
   }
   html {

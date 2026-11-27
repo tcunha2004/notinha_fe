@@ -1,9 +1,8 @@
 import { Link, useLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
+import { HeaderActions } from '../components/domain/HeaderActions';
 import { Logo } from '../components/domain/Logo';
-import { ProfileMenu } from '../components/domain/ProfileMenu';
 import { PurchaseRow } from '../components/domain/PurchaseRow';
-import { ThemeToggle } from '../components/domain/ThemeToggle';
 import { Amount } from '../components/ui/Amount';
 import { Button } from '../components/ui/Button';
 import { SectionHeader } from '../components/ui/SectionHeader';
@@ -22,10 +21,7 @@ export function Home() {
       <h1 className="sr-only">Início</h1>
       <header className="flex h-11 items-center justify-between px-5">
         <Logo className="text-[24px] lg:invisible" />
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <ProfileMenu />
-        </div>
+        <HeaderActions />
       </header>
 
       {month ? (
@@ -69,7 +65,7 @@ export function Home() {
         <section className="flex flex-col items-start gap-2 px-5 pt-16">
           <h2 className="texto-titulo-2">Nenhuma nota ainda</h2>
           <p className="texto-corpo text-texto-secundario">
-            Fotografe a primeira e a gente organiza suas compras.
+            Fotografe a primeira nota do mercado ou farmácia e a gente organiza suas compras.
           </p>
           <Button to="/scan" size="medio" className="mt-4">
             Enviar nota
