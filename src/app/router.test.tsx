@@ -91,6 +91,28 @@ describe('routes render without crashing', () => {
     expect(within(sheet).getByText('Mais barata')).toBeInTheDocument();
   });
 
+  it('the brand row filters the products grid, together with the search', async () => {
+    renderAt('/products');
+    const row = await screen.findByRole('group', { name: 'Filtrar por marca' });
+    const toddy = within(row).getByRole('button', { name: 'Toddy' });
+    expect(toddy).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(toddy);
+    expect(toddy).toHaveAttribute('aria-pressed', 'true');
+    const grid = screen.getByRole('list', { name: 'Produtos' });
+    expect(within(grid).getAllByRole('link')).toHaveLength(1);
+    expect(within(grid).getByRole('link', { name: /^Achocolatado/ })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole('searchbox'), 'leite');
+    expect(screen.getByRole('status')).toHaveTextContent('Nenhum produto com “leite” de Toddy.');
+
+    await userEvent.clear(screen.getByRole('searchbox'));
+    await userEvent.click(toddy); // tap again: filter off
+    expect(
+      within(screen.getByRole('list', { name: 'Produtos' })).getAllByRole('link').length,
+    ).toBeGreaterThan(1);
+  });
+
   it('the receipt review shows the brand after the item name', async () => {
     renderAt('/purchases/p1/review');
     await screen.findByRole('heading', { level: 1, name: 'Nota lida' });

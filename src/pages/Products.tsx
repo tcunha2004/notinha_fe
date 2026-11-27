@@ -2,14 +2,17 @@ import { Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLoaderData } from 'react-router';
 import type { purchasesLoader } from '../app/loaders';
+import { BrandMark } from '../components/domain/BrandMark';
 import { HeaderActions } from '../components/domain/HeaderActions';
 import { Price } from '../components/domain/Price';
 import { PriceTrend } from '../components/domain/PriceTrend';
 import { Button } from '../components/ui/Button';
+import { cn } from '../lib/cn';
 import {
   brandName,
   foldText,
   groupProducts,
+  listBrands,
   productSize,
   trendSentence,
   variantSize,
@@ -21,13 +24,19 @@ export function Products() {
   // One card per generic product: "Café torrado" holds Pilão, unbranded and any other brand.
   const groups = useMemo(() => groupProducts(purchases), [purchases]);
   const [query, setQuery] = useState('');
+  const brands = useMemo(() => listBrands(groups), [groups]);
+  const [brand, setBrand] = useState<string | null>(null);
 
   const folded = foldText(query.trim());
-  const shown = folded
-    ? groups.filter(({ name, variants }) =>
-        foldText([name, ...variants.map((v) => v.product.brand ?? '')].join(' ')).includes(folded),
-      )
-    : groups;
+  // Search and brand filter combine: a card has to pass both.
+  const shown = groups.filter(
+    ({ name, variants }) =>
+      (!folded ||
+        foldText([name, ...variants.map((v) => v.product.brand ?? '')].join(' ')).includes(
+          folded,
+        )) &&
+      (!brand || variants.some((v) => v.product.brand === brand)),
+  );
 
   return (
     <main className="page-container pt-[max(12px,env(safe-area-inset-top))] animate-surgir">
@@ -68,6 +77,31 @@ export function Products() {
             )}
           </label>
         )}
+
+        {brands.length > 0 && (
+          // Bleeds to the screen edges; the vertical padding keeps the selection ring uncut.
+          <div
+            role="group"
+            aria-label="Filtrar por marca"
+            className="-mx-5 -my-1 flex gap-2 overflow-x-auto px-5 py-1 [scrollbar-width:none]"
+          >
+            {brands.map((b) => (
+              <button
+                key={b.name}
+                type="button"
+                aria-label={b.name}
+                aria-pressed={brand === b.name}
+                onClick={() => setBrand(brand === b.name ? null : b.name)}
+                className={cn(
+                  'pressable shrink-0 rounded-full',
+                  brand === b.name && 'ring-2 ring-texto',
+                )}
+              >
+                <BrandMark brand={b.name} logo={b.logo} size="md" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {groups.length === 0 ? (
@@ -84,7 +118,7 @@ export function Products() {
         </section>
       ) : shown.length === 0 ? (
         <p role="status" className="px-5 pt-8 texto-corpo text-texto-secundario">
-          Nenhum produto com “{query.trim()}”.
+          Nenhum produto com “{query.trim()}”{brand && ` de ${brand}`}.
         </p>
       ) : (
         <ul aria-label="Produtos" className="mt-5 grid grid-cols-2 gap-3 px-5 sm:grid-cols-3">
