@@ -1,5 +1,13 @@
 // Test fixtures shaped like the API's GET /purchases answer (newest first).
-import type { Product, Purchase, PurchaseItem, PurchaseStatus, Store, Unit } from '../types';
+import type {
+  PaymentMethod,
+  Product,
+  Purchase,
+  PurchaseItem,
+  PurchaseStatus,
+  Store,
+  Unit,
+} from '../types';
 
 /** A product as the API returns it, identified by name only. */
 const product = (name: string): Product => ({
@@ -124,7 +132,7 @@ function summary(
   purchased_at: string,
   itemCount: number,
   total_amount: number,
-  payment_method: string,
+  payment_method: PaymentMethod | null,
   status: PurchaseStatus = 'ok',
 ): Purchase {
   return {
@@ -145,7 +153,7 @@ export const purchases: Purchase[] = [
     store: stores.bomDia,
     purchased_at: '2026-11-24T18:42:00',
     total_amount: 129.46,
-    payment_method: 'Cartão de crédito',
+    payment_method: 'CRÉDITO',
     status: 'ok',
     items: items('p1', [
       ['ARROZ T1 5KG', 'Arroz tipo 1 5kg', 1, 'UN', 27.9, 27.9],
@@ -163,7 +171,7 @@ export const purchases: Purchase[] = [
     store: stores.solNascente,
     purchased_at: '2026-11-23T10:15:00',
     total_amount: 42.18,
-    payment_method: 'Pix',
+    payment_method: 'PIX',
     status: 'needs_review',
     items: items('p2', [
       ['TOMATE ITALIANO KG', 'Tomate italiano', 0.842, 'KG', 8.99, 7.57],
@@ -173,12 +181,12 @@ export const purchases: Purchase[] = [
       ['MAMAO FORMOSA KG', 'Mamão formosa', 1.38, 'KG', 7.9, 10.9],
     ]),
   },
-  summary('p3', stores.valeVerde, '2026-11-19T17:20:00', 23, 356.72, 'Cartão de débito'),
-  summary('p4', stores.emporio, '2026-11-16T12:05:00', 4, 61.3, 'Pix'),
-  summary('p5', stores.valeVerde, '2026-11-12T19:48:00', 31, 402.15, 'Cartão de crédito'),
-  summary('p6', stores.bomDia, '2026-11-08T09:30:00', 12, 158.4, 'Cartão de débito'),
-  summary('p7', stores.trigoBom, '2026-11-03T07:55:00', 3, 98.69, 'Dinheiro'),
-  summary('p8', stores.valeVerde, '2026-10-28T18:10:00', 27, 389.2, 'Cartão de crédito'),
-  summary('p9', stores.bomDia, '2026-10-21T11:40:00', 15, 201.47, 'Pix'),
-  summary('p10', stores.emporio, '2026-10-14T16:25:00', 6, 94.1, 'Cartão de débito'),
+  summary('p3', stores.valeVerde, '2026-11-19T17:20:00', 23, 356.72, 'DÉBITO'),
+  summary('p4', stores.emporio, '2026-11-16T12:05:00', 4, 61.3, 'PIX'),
+  summary('p5', stores.valeVerde, '2026-11-12T19:48:00', 31, 402.15, 'CRÉDITO'),
+  summary('p6', stores.bomDia, '2026-11-08T09:30:00', 12, 158.4, 'DÉBITO'),
+  summary('p7', stores.trigoBom, '2026-11-03T07:55:00', 3, 98.69, 'DINHEIRO'),
+  summary('p8', stores.valeVerde, '2026-10-28T18:10:00', 27, 389.2, 'CRÉDITO'),
+  summary('p9', stores.bomDia, '2026-10-21T11:40:00', 15, 201.47, 'PIX'),
+  summary('p10', stores.emporio, '2026-10-14T16:25:00', 6, 94.1, 'DÉBITO'),
 ];

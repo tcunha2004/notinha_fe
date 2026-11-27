@@ -72,7 +72,7 @@ export const itemTitle = (item: PurchaseItem) => sentenceCase(itemLabel(item));
 /** The CNPJ may be unreadable, and then there's no store at all. */
 export const storeName = (purchase: Purchase) => purchase.store?.name ?? 'Loja não identificada';
 
-/** "Hoje, 18:42 · Cartão de crédito" (payment left out when it wasn't read). */
+/** "Hoje, 18:42 · CRÉDITO" (payment left out when it wasn't read). */
 export const purchaseSubtitle = (purchase: Purchase) =>
   [formatPurchaseDate(purchase.purchased_at, { withTime: true }), purchase.payment_method]
     .filter(Boolean)

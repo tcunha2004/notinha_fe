@@ -49,13 +49,15 @@ export interface ItemInput {
   discount: number;
 }
 
+export type PaymentMethod = 'DÉBITO' | 'CRÉDITO' | 'PIX' | 'DINHEIRO';
+
 export interface Purchase {
   id: string;
   /** null when the CNPJ couldn't be read. */
   store: Store | null;
   purchased_at: string;
   total_amount: number;
-  payment_method: string | null;
+  payment_method: PaymentMethod | null;
   status: PurchaseStatus;
   items: PurchaseItem[];
 }
